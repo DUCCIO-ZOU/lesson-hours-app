@@ -1,9 +1,8 @@
-const STORAGE_KEY = 'lesson-hours-records-v4';
+const STORAGE_KEY = 'lesson-hours-records-v5';
 
 const form = document.getElementById('recordForm');
 const dateInput = document.getElementById('date');
 const startTimeInput = document.getElementById('startTime');
-const teacherInput = document.getElementById('teacher');
 const courseInput = document.getElementById('course');
 const lessonTypeInput = document.getElementById('lessonType');
 const hoursInput = document.getElementById('hours');
@@ -44,7 +43,6 @@ function migrateRecords(records) {
     id: item.id || crypto.randomUUID(),
     date: item.date || today(),
     startTime: item.startTime || '',
-    teacher: item.teacher || '',
     course: item.course || '',
     lessonType: item.lessonType || '阶梯课时',
     hours: toFixedHours(item.hours ?? ((Number(item.minutes || 0) && Number(item.unitMinutes || 0)) ? Number(item.minutes) / Number(item.unitMinutes) : 0)),
@@ -54,8 +52,15 @@ function migrateRecords(records) {
 
 function loadRecords() {
   try {
-    const v4 = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (v4) return migrateRecords(v4);
+    const v5 = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (v5) return migrateRecords(v5);
+
+    const v4 = JSON.parse(localStorage.getItem('lesson-hours-records-v4'));
+    if (v4) {
+      const migrated = migrateRecords(v4);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
 
     const v3 = JSON.parse(localStorage.getItem('lesson-hours-records-v3'));
     if (v3) {
@@ -165,7 +170,6 @@ form.addEventListener('submit', (e) => {
     id: crypto.randomUUID(),
     date: dateInput.value,
     startTime: startTimeInput.value,
-    teacher: teacherInput.value.trim(),
     course: courseInput.value.trim(),
     lessonType: lessonTypeInput.value,
     hours: toFixedHours(hoursInput.value),
@@ -180,7 +184,6 @@ form.addEventListener('submit', (e) => {
   dateInput.value = today();
   startTimeInput.value = nowTime();
   lessonTypeInput.value = record.lessonType;
-  teacherInput.value = record.teacher;
   render();
 });
 
@@ -201,8 +204,8 @@ exportBtn.addEventListener('click', () => {
     return;
   }
 
-  const header = ['日期', '上课时间', '老师姓名', '课程名称', '课时类型', '课时', '备注'];
-  const rows = records.map(item => [item.date, item.startTime || '', item.teacher || '', item.course, item.lessonType, item.hours, item.note || '']);
+  const header = ['日期', '上课时间', '课程名称', '课时类型', '课时', '备注'];
+  const rows = records.map(item => [item.date, item.startTime || '', item.course, item.lessonType, item.hours, item.note || '']);
   const csv = [header, ...rows]
     .map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(','))
     .join('\n');
