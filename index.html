@@ -23,6 +23,11 @@
           </label>
 
           <label>
+            上课具体时间点
+            <input type="time" id="startTime" required />
+          </label>
+
+          <label>
             老师姓名
             <input type="text" id="teacher" placeholder="例如：王老师" required />
           </label>
@@ -41,13 +46,8 @@
           </label>
 
           <label>
-            上课时长（分钟）
-            <input type="number" id="minutes" min="1" step="1" placeholder="例如：60" required />
-          </label>
-
-          <label>
-            1课时等于多少分钟
-            <input type="number" id="unitMinutes" min="1" step="1" value="60" required />
+            课时数
+            <input type="number" id="hours" min="0.1" step="0.1" placeholder="例如：1 或 1.5" required />
           </label>
 
           <label>
@@ -101,7 +101,7 @@
 
         <div class="filters three-cols">
           <input type="month" id="monthFilter" />
-          <input type="text" id="keywordFilter" placeholder="搜索老师 / 课程" />
+          <input type="text" id="keywordFilter" placeholder="搜索课程 / 备注" />
           <select id="typeFilter">
             <option value="">全部类型</option>
             <option value="阶梯课时">阶梯课时</option>
@@ -114,10 +114,9 @@
             <thead>
               <tr>
                 <th>日期</th>
-                <th>老师</th>
+                <th>时间</th>
                 <th>课程</th>
                 <th>类型</th>
-                <th>时长</th>
                 <th>课时</th>
                 <th>备注</th>
                 <th>操作</th>
