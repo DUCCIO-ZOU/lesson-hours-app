@@ -73,6 +73,9 @@ function setHoursChoice(value) {
   hoursInput.value = value;
   document.querySelectorAll('.hour-choice').forEach(btn => btn.classList.toggle('active', btn.dataset.hours === String(value)));
 }
+function sumHours(records) {
+  return records.reduce((sum, item) => sum + Number(item.hours), 0).toFixed(2);
+}
 
 async function fetchStudents() {
   const { data, error } = await supabaseClient.from('students').select('*').order('name', { ascending: true });
