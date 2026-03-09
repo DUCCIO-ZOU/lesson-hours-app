@@ -28,6 +28,17 @@
           </label>
 
           <label>
+            学生姓名
+            <div class="stack">
+              <select id="studentSelect" required></select>
+              <div class="inline-row">
+                <input type="text" id="newStudentName" placeholder="新学生姓名（可直接新增）" />
+                <button type="button" id="addStudentQuickBtn" class="secondary">新增</button>
+              </div>
+            </div>
+          </label>
+
+          <label>
             课程名称
             <input type="text" id="course" placeholder="例如：钢琴启蒙" required />
           </label>
@@ -52,6 +63,22 @@
 
           <button type="submit" class="primary full">保存记录</button>
         </form>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2>学生管理</h2>
+          <div class="actions">
+            <button id="showInactiveBtn" type="button" class="secondary">显示/隐藏已停课</button>
+          </div>
+        </div>
+        <div class="student-manage-grid">
+          <div class="inline-row">
+            <input type="text" id="manageStudentName" placeholder="输入学生姓名后新增" />
+            <button id="addStudentBtn" type="button" class="primary">新增学生</button>
+          </div>
+          <div id="studentList" class="student-list"></div>
+        </div>
       </section>
 
       <section class="stats-grid seven-cols">
@@ -94,13 +121,16 @@
           </div>
         </div>
 
-        <div class="filters three-cols">
+        <div class="filters four-cols">
           <input type="month" id="monthFilter" />
-          <input type="text" id="keywordFilter" placeholder="搜索课程 / 备注" />
+          <input type="text" id="keywordFilter" placeholder="搜索学生 / 课程 / 备注" />
           <select id="typeFilter">
             <option value="">全部类型</option>
             <option value="阶梯课时">阶梯课时</option>
             <option value="分成课时">分成课时</option>
+          </select>
+          <select id="studentFilter">
+            <option value="">全部学生</option>
           </select>
         </div>
 
@@ -110,6 +140,7 @@
               <tr>
                 <th>日期</th>
                 <th>时间</th>
+                <th>学生</th>
                 <th>课程</th>
                 <th>类型</th>
                 <th>课时</th>
