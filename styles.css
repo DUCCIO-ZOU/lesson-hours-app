@@ -44,6 +44,9 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
+.simple-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 label {
   display: flex;
   flex-direction: column;
@@ -74,6 +77,27 @@ button.danger { background: #fee2e2; color: var(--danger); }
 .stack { display: flex; flex-direction: column; gap: 8px; }
 .inline-row { display: flex; gap: 8px; }
 .inline-row input { flex: 1; }
+.choice-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.hour-choice-group {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.hour-choice {
+  background: #f3f4f6;
+  color: var(--text);
+  border: 1px solid transparent;
+}
+.hour-choice.active {
+  background: #dbeafe;
+  color: var(--primary-dark);
+  border-color: #93c5fd;
+}
 
 .collapse-btn {
   width: 100%;
@@ -127,7 +151,6 @@ button.danger { background: #fee2e2; color: var(--danger); }
 .stats-grid.three-cols,
 .month-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stats-grid.four-total-cols { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.stats-grid.seven-cols { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .stat span { display: block; color: var(--muted); margin-bottom: 8px; }
 .stat strong { font-size: 28px; }
 .compact-stat strong { font-size: 24px; }
@@ -151,7 +174,7 @@ button.danger { background: #fee2e2; color: var(--danger); }
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 980px;
+  min-width: 760px;
 }
 th, td {
   padding: 12px 8px;
@@ -167,16 +190,17 @@ th, td {
 }
 
 @media (max-width: 900px) {
-  .stats-grid.seven-cols,
   .stats-grid.four-total-cols,
   .stats-grid.three-cols,
-  .month-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .filters.four-cols { grid-template-columns: 1fr 1fr; }
+  .month-stats,
+  .hour-choice-group { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filters.four-cols,
+  .simple-form-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 720px) {
   .hero h1 { font-size: 26px; }
-  .form-grid, .stats-grid, .filters, .filters.four-cols, .stats-grid.seven-cols, .stats-grid.four-total-cols, .stats-grid.three-cols, .month-stats { grid-template-columns: 1fr; }
+  .form-grid, .simple-form-grid, .stats-grid, .filters, .filters.four-cols, .stats-grid.four-total-cols, .stats-grid.three-cols, .month-stats, .hour-choice-group { grid-template-columns: 1fr; }
   .section-title, .student-chip, .inline-row {
     flex-direction: column;
     align-items: stretch;

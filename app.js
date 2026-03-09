@@ -1,9 +1,8 @@
-const RECORDS_KEY = 'lesson-hours-records-v7';
+const RECORDS_KEY = 'lesson-hours-records-v8';
 const STUDENTS_KEY = 'lesson-hours-students-v1';
 
 const form = document.getElementById('recordForm');
 const dateInput = document.getElementById('date');
-const startTimeInput = document.getElementById('startTime');
 const studentSelect = document.getElementById('studentSelect');
 const newStudentNameInput = document.getElementById('newStudentName');
 const addStudentQuickBtn = document.getElementById('addStudentQuickBtn');
@@ -19,9 +18,9 @@ const monthStatsPanel = document.getElementById('monthStatsPanel');
 const toggleTotalStatsBtn = document.getElementById('toggleTotalStatsBtn');
 const totalStatsPanel = document.getElementById('totalStatsPanel');
 const studentList = document.getElementById('studentList');
-const courseInput = document.getElementById('course');
 const lessonTypeInput = document.getElementById('lessonType');
 const hoursInput = document.getElementById('hours');
+const hoursChoiceGroup = document.getElementById('hoursChoiceGroup');
 const noteInput = document.getElementById('note');
 const monthFilter = document.getElementById('monthFilter');
 const keywordFilter = document.getElementById('keywordFilter');
@@ -45,11 +44,6 @@ let totalStatsExpanded = false;
 
 function today() {
   return new Date().toISOString().split('T')[0];
-}
-
-function nowTime() {
-  const now = new Date();
-  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 }
 
 function currentMonth() {
@@ -164,12 +158,10 @@ function migrateRecords(records) {
     return {
       id: item.id || crypto.randomUUID(),
       date: item.date || today(),
-      startTime: item.startTime || '',
       studentId: item.studentId || student?.id || '',
       studentName: studentName || student?.name || '',
-      course: item.course || '',
       lessonType: item.lessonType === '分成课时' ? '陪练课时' : (item.lessonType || '阶梯课时'),
-      hours: toFixedHours(item.hours ?? ((Number(item.minutes || 0) && Number(item.unitMinutes || 0)) ? Number(item.minutes) / Number(item.unitMinutes) : 0)),
+      hours: toFixedHours(item.hours ?? 1),
       note: item.note || '',
     };
   });
@@ -177,10 +169,11 @@ function migrateRecords(records) {
 
 function loadRecords() {
   try {
-    const v7 = JSON.parse(localStorage.getItem(RECORDS_KEY));
-    if (v7) return migrateRecords(v7);
+    const v8 = JSON.parse(localStorage.getItem(RECORDS_KEY));
+    if (v8) return migrateRecords(v8);
 
     const legacyKeys = [
+      'lesson-hours-records-v7',
       'lesson-hours-records-v6',
       'lesson-hours-records-v5',
       'lesson-hours-records-v4',
@@ -210,6 +203,13 @@ function saveRecords(records) {
 
 function sumHours(records) {
   return records.reduce((sum, item) => sum + Number(item.hours), 0).toFixed(2);
+}
+
+function setHoursChoice(value) {
+  hoursInput.value = value;
+  document.querySelectorAll('.hour-choice').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.hours === String(value));
+  });
 }
 
 function renderStudentOptions() {
@@ -268,7 +268,7 @@ function getFilteredRecords(records) {
 
   return records.filter((item) => {
     const matchMonth = !month || item.date.startsWith(month);
-    const text = `${item.studentName} ${item.course} ${item.note} ${item.lessonType} ${item.startTime}`.toLowerCase();
+    const text = `${item.studentName} ${item.note} ${item.lessonType}`.toLowerCase();
     const matchKeyword = !keyword || text.includes(keyword);
     const matchType = !type || item.lessonType === type;
     const matchStudent = !studentId || item.studentId === studentId;
@@ -277,7 +277,7 @@ function getFilteredRecords(records) {
 }
 
 function renderRecords() {
-  const records = loadRecords().sort((a, b) => `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`));
+  const records = loadRecords().sort((a, b) => b.date.localeCompare(a.date));
   const filtered = getFilteredRecords(records);
   const currentMonthRecords = records.filter((item) => item.date.startsWith(currentMonth()));
   const tierRecords = records.filter((item) => item.lessonType === '阶梯课时');
@@ -294,16 +294,14 @@ function renderRecords() {
   monthShareHours.textContent = sumHours(currentMonthShareRecords);
 
   if (!filtered.length) {
-    tableBody.innerHTML = '<tr><td colspan="8" class="empty">还没有记录</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="6" class="empty">还没有记录</td></tr>';
     return;
   }
 
   tableBody.innerHTML = filtered.map((item) => `
     <tr>
       <td>${item.date}</td>
-      <td>${item.startTime || '-'}</td>
       <td>${escapeHtml(item.studentName || '-')}</td>
-      <td>${escapeHtml(item.course)}</td>
       <td>${escapeHtml(item.lessonType)}</td>
       <td>${item.hours}</td>
       <td>${escapeHtml(item.note || '-')}</td>
@@ -389,10 +387,8 @@ form.addEventListener('submit', (e) => {
   const record = {
     id: crypto.randomUUID(),
     date: dateInput.value,
-    startTime: startTimeInput.value,
     studentId: selectedStudent.id,
     studentName: selectedStudent.name,
-    course: courseInput.value.trim(),
     lessonType: lessonTypeInput.value,
     hours: toFixedHours(hoursInput.value),
     note: noteInput.value.trim(),
@@ -404,10 +400,16 @@ form.addEventListener('submit', (e) => {
 
   form.reset();
   dateInput.value = today();
-  startTimeInput.value = nowTime();
   lessonTypeInput.value = record.lessonType;
   studentSelect.value = selectedStudent.id;
+  setHoursChoice('1');
   renderRecords();
+});
+
+hoursChoiceGroup.addEventListener('click', (e) => {
+  const btn = e.target.closest('.hour-choice');
+  if (!btn) return;
+  setHoursChoice(btn.dataset.hours);
 });
 
 addStudentQuickBtn.addEventListener('click', () => addStudentFromInput(newStudentNameInput));
@@ -457,8 +459,8 @@ exportBtn.addEventListener('click', () => {
     return;
   }
 
-  const header = ['日期', '上课时间', '学生姓名', '课程名称', '课时类型', '课时', '备注'];
-  const rows = records.map(item => [item.date, item.startTime || '', item.studentName || '', item.course, item.lessonType, item.hours, item.note || '']);
+  const header = ['日期', '学生姓名', '课时类型', '课时', '备注'];
+  const rows = records.map(item => [item.date, item.studentName || '', item.lessonType, item.hours, item.note || '']);
   const csv = [header, ...rows]
     .map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(','))
     .join('\n');
@@ -473,6 +475,6 @@ exportBtn.addEventListener('click', () => {
 });
 
 dateInput.value = today();
-startTimeInput.value = nowTime();
 monthFilter.value = currentMonth();
+setHoursChoice('1');
 renderAll();
