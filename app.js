@@ -2,6 +2,11 @@ const SUPABASE_URL = 'https://dzdaxinyoikwxpwejjzy.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_5ZSLCZbLXW8zgaFERIvdvQ_xcySS6nJ';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+const authScreen = document.getElementById('authScreen');
+const appShell = document.getElementById('appShell');
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const userLabel = document.getElementById('userLabel');
 const form = document.getElementById('recordForm');
 const dateInput = document.getElementById('date');
 const studentSelect = document.getElementById('studentSelect');
@@ -40,6 +45,7 @@ const monthTierHours = document.getElementById('monthTierHours');
 const monthShareHours = document.getElementById('monthShareHours');
 const exportBtn = document.getElementById('exportBtn');
 
+let currentSession = null;
 let showInactiveStudents = false;
 let studentManageExpanded = false;
 let monthStatsExpanded = false;
@@ -76,13 +82,33 @@ function setHoursChoice(value) {
 function sumHours(records) {
   return records.reduce((sum, item) => sum + Number(item.hours), 0).toFixed(2);
 }
+function setAuthUI(session) {
+  currentSession = session;
+  const loggedIn = !!session;
+  authScreen.classList.toggle('hidden', loggedIn);
+  appShell.classList.toggle('hidden', !loggedIn);
+  if (loggedIn) {
+    const label = session.user?.user_metadata?.user_name || session.user?.email || '已登录';
+    userLabel.textContent = `${label}`;
+  }
+}
+
+async function signInWithGitHub() {
+  const redirectTo = window.location.origin + window.location.pathname;
+  const { error } = await supabaseClient.auth.signInWithOAuth({ provider: 'github', options: { redirectTo } });
+  if (error) alert(error.message);
+}
+async function signOut() {
+  const { error } = await supabaseClient.auth.signOut();
+  if (error) return alert(error.message);
+  setAuthUI(null);
+}
 
 async function fetchStudents() {
   const { data, error } = await supabaseClient.from('students').select('*').order('name', { ascending: true });
   if (error) throw error;
   studentsState = data || [];
 }
-
 async function fetchRecords() {
   const { data, error } = await supabaseClient
     .from('lesson_records')
@@ -100,7 +126,6 @@ async function fetchRecords() {
     note: item.note || '',
   }));
 }
-
 async function refreshData() {
   await Promise.all([fetchStudents(), fetchRecords()]);
   renderAll();
@@ -124,7 +149,6 @@ async function ensureStudent(name, active = true) {
   await fetchStudents();
   return data;
 }
-
 async function batchImportStudents(rawText) {
   const names = [...new Set(String(rawText || '').split(/\r?\n|,|，|、|;|；/).map(normalizeStudent).filter(Boolean))];
   let added = 0;
@@ -147,7 +171,6 @@ async function batchImportStudents(rawText) {
   renderAll();
   return { added, reactivated };
 }
-
 async function toggleStudentStatus(id) {
   const target = studentsState.find(item => item.id === id);
   if (!target) return;
@@ -156,7 +179,6 @@ async function toggleStudentStatus(id) {
   await fetchStudents();
   renderAll();
 }
-
 async function deleteStudent(id) {
   const target = studentsState.find(s => s.id === id);
   const used = recordsState.some(item => item.studentId === id || item.studentName === target?.name);
@@ -168,7 +190,6 @@ async function deleteStudent(id) {
 }
 window.toggleStudentStatus = toggleStudentStatus;
 window.deleteStudent = deleteStudent;
-
 async function removeRecord(id) {
   const { error } = await supabaseClient.from('lesson_records').delete().eq('id', id);
   if (error) return alert(error.message);
@@ -186,7 +207,6 @@ function renderStudentOptions() {
   studentFilter.innerHTML = ['<option value="">全部学生</option>', ...studentsState.map(item => `<option value="${item.id}">${escapeHtml(item.name)}${item.active ? '' : '（已停课）'}</option>`)].join('');
   if (currentFilter && studentsState.some(item => item.id === currentFilter)) studentFilter.value = currentFilter;
 }
-
 function renderStudentList() {
   const visible = studentsState.filter(item => showInactiveStudents || item.active);
   if (!visible.length) {
@@ -202,7 +222,6 @@ function renderStudentList() {
       </div>
     </div>`).join('');
 }
-
 function getFilteredRecords(records) {
   const month = monthFilter.value;
   const keyword = keywordFilter.value.trim().toLowerCase();
@@ -214,7 +233,6 @@ function getFilteredRecords(records) {
     return matchMonth && (!keyword || text.includes(keyword)) && (!type || item.lessonType === type) && (!studentId || item.studentId === studentId);
   });
 }
-
 function renderRecords() {
   const filtered = getFilteredRecords(recordsState);
   const currentMonthRecords = recordsState.filter(item => item.date.startsWith(currentMonth()));
@@ -243,7 +261,6 @@ function renderRecords() {
       <td><button class="small-btn" onclick="removeRecord('${item.id}')">删除</button></td>
     </tr>`).join('');
 }
-
 function renderStudentManagePanel() {
   studentManagePanel.classList.toggle('collapsed', !studentManageExpanded);
   toggleStudentManageBtn.textContent = studentManageExpanded ? '学生管理（点击收起）' : '学生管理（点击展开）';
@@ -339,6 +356,8 @@ monthFilter.addEventListener('input', renderRecords);
 keywordFilter.addEventListener('input', renderRecords);
 typeFilter.addEventListener('input', renderRecords);
 studentFilter.addEventListener('input', renderRecords);
+loginBtn.addEventListener('click', signInWithGitHub);
+logoutBtn.addEventListener('click', signOut);
 
 exportBtn.addEventListener('click', () => {
   if (!recordsState.length) return alert('暂无可导出的记录');
@@ -361,13 +380,35 @@ async function init() {
   dateInput.value = today();
   monthFilter.value = currentMonth();
   setHoursChoice('1');
-  try {
-    await refreshData();
-    showToast('云端同步已连接');
-  } catch (error) {
+
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error) {
     console.error(error);
-    alert(`云端连接失败：${error.message}`);
+    return alert(`登录状态读取失败：${error.message}`);
   }
+  setAuthUI(data.session);
+  if (data.session) {
+    try {
+      await refreshData();
+      showToast('登录成功，云端同步已连接');
+    } catch (err) {
+      console.error(err);
+      alert(`云端连接失败：${err.message}`);
+    }
+  }
+
+  supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+    setAuthUI(session);
+    if (session) {
+      try {
+        await refreshData();
+        showToast('已登录');
+      } catch (err) {
+        console.error(err);
+        alert(`云端连接失败：${err.message}`);
+      }
+    }
+  });
 }
 
 init();

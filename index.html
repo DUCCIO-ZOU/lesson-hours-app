@@ -15,7 +15,21 @@
 
     <div id="toast" class="toast"></div>
 
-    <main>
+    <section id="authScreen" class="auth-screen card">
+      <h2>登录后使用</h2>
+      <p>现在这个版本已经开启登录保护。请先用 GitHub 登录，再查看和编辑你的课时数据。</p>
+      <button id="loginBtn" type="button" class="primary">使用 GitHub 登录</button>
+    </section>
+
+    <main id="appShell" class="hidden">
+      <section class="card session-bar">
+        <div>
+          <strong id="userLabel">已登录</strong>
+          <div class="session-sub">只有登录后才能访问云端数据</div>
+        </div>
+        <button id="logoutBtn" type="button" class="secondary">退出登录</button>
+      </section>
+
       <section class="card">
         <h2>新增上课记录</h2>
         <form id="recordForm" class="form-grid simple-form-grid">
