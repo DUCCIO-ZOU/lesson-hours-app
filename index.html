@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>课时达人</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <h1>课时达人</h1>
+      <p>手机也能随手记，自动统计每月课时</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>新增上课记录</h2>
+        <form id="recordForm" class="form-grid">
+          <label>
+            日期
+            <input type="date" id="date" required />
+          </label>
+
+          <label>
+            老师姓名
+            <input type="text" id="teacher" placeholder="例如：王老师" required />
+          </label>
+
+          <label>
+            课程名称
+            <input type="text" id="course" placeholder="例如：钢琴启蒙" required />
+          </label>
+
+          <label>
+            上课时长（分钟）
+            <input type="number" id="minutes" min="1" step="1" placeholder="例如：60" required />
+          </label>
+
+          <label>
+            1课时等于多少分钟
+            <input type="number" id="unitMinutes" min="1" step="1" value="60" required />
+          </label>
+
+          <label>
+            备注（可不填）
+            <input type="text" id="note" placeholder="例如：试听课 / 补课" />
+          </label>
+
+          <button type="submit" class="primary full">保存记录</button>
+        </form>
+      </section>
+
+      <section class="stats-grid">
+        <div class="card stat">
+          <span>总记录数</span>
+          <strong id="totalCount">0</strong>
+        </div>
+        <div class="card stat">
+          <span>总课时</span>
+          <strong id="totalHours">0</strong>
+        </div>
+        <div class="card stat">
+          <span>本月课时</span>
+          <strong id="monthHours">0</strong>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2>记录列表</h2>
+          <div class="actions">
+            <button id="exportBtn" type="button" class="secondary">导出CSV</button>
+            <button id="clearBtn" type="button" class="danger">清空全部</button>
+          </div>
+        </div>
+
+        <div class="filters">
+          <input type="month" id="monthFilter" />
+          <input type="text" id="keywordFilter" placeholder="搜索老师 / 课程" />
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>老师</th>
+                <th>课程</th>
+                <th>时长</th>
+                <th>课时</th>
+                <th>备注</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="recordTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
