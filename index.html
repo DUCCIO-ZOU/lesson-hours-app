@@ -66,48 +66,35 @@
       </section>
 
       <section class="card">
-        <div class="section-title">
-          <h2>学生管理</h2>
-          <div class="actions">
-            <button id="showInactiveBtn" type="button" class="secondary">显示/隐藏已停课</button>
+        <button id="toggleStudentManageBtn" type="button" class="collapse-btn">学生管理（点击展开）</button>
+        <div id="studentManagePanel" class="student-manage-panel collapsed">
+          <div class="section-title top-gap">
+            <h2>学生管理</h2>
+            <div class="actions">
+              <button id="showInactiveBtn" type="button" class="secondary">显示/隐藏已停课</button>
+            </div>
           </div>
-        </div>
-        <div class="student-manage-grid">
-          <div class="inline-row">
-            <input type="text" id="manageStudentName" placeholder="输入学生姓名后新增" />
-            <button id="addStudentBtn" type="button" class="primary">新增学生</button>
+          <div class="student-manage-grid">
+            <div class="inline-row">
+              <input type="text" id="manageStudentName" placeholder="输入学生姓名后新增" />
+              <button id="addStudentBtn" type="button" class="primary">新增学生</button>
+            </div>
+            <div class="batch-box">
+              <label>
+                批量导入学生
+                <textarea id="batchStudentNames" rows="8" placeholder="一行一个学生姓名，例如：&#10;赵静&#10;潘昊睿&#10;苏奕瑀"></textarea>
+              </label>
+              <button id="batchImportBtn" type="button" class="primary">批量导入</button>
+            </div>
+            <div id="studentList" class="student-list"></div>
           </div>
-          <div class="batch-box">
-            <label>
-              批量导入学生
-              <textarea id="batchStudentNames" rows="8" placeholder="一行一个学生姓名，例如：&#10;赵静&#10;潘昊睿&#10;苏奕瑀"></textarea>
-            </label>
-            <button id="batchImportBtn" type="button" class="primary">批量导入</button>
-          </div>
-          <div id="studentList" class="student-list"></div>
         </div>
       </section>
 
-      <section class="stats-grid seven-cols">
-        <div class="card stat">
-          <span>总记录数</span>
-          <strong id="totalCount">0</strong>
-        </div>
-        <div class="card stat">
-          <span>总课时</span>
-          <strong id="totalHours">0</strong>
-        </div>
+      <section class="stats-grid three-cols month-stats">
         <div class="card stat">
           <span>本月课时</span>
           <strong id="monthHours">0</strong>
-        </div>
-        <div class="card stat">
-          <span>阶梯课时</span>
-          <strong id="tierHours">0</strong>
-        </div>
-        <div class="card stat">
-          <span>分成课时</span>
-          <strong id="shareHours">0</strong>
         </div>
         <div class="card stat">
           <span>本月阶梯课时</span>
@@ -116,6 +103,30 @@
         <div class="card stat">
           <span>本月分成课时</span>
           <strong id="monthShareHours">0</strong>
+        </div>
+      </section>
+
+      <section class="card">
+        <button id="toggleTotalStatsBtn" type="button" class="collapse-btn">总统计（点击展开）</button>
+        <div id="totalStatsPanel" class="total-stats-panel collapsed top-gap">
+          <section class="stats-grid four-total-cols">
+            <div class="card stat compact-stat">
+              <span>总记录数</span>
+              <strong id="totalCount">0</strong>
+            </div>
+            <div class="card stat compact-stat">
+              <span>总课时</span>
+              <strong id="totalHours">0</strong>
+            </div>
+            <div class="card stat compact-stat">
+              <span>总阶梯课时</span>
+              <strong id="tierHours">0</strong>
+            </div>
+            <div class="card stat compact-stat">
+              <span>总分成课时</span>
+              <strong id="shareHours">0</strong>
+            </div>
+          </section>
         </div>
       </section>
 

@@ -12,6 +12,10 @@ const addStudentBtn = document.getElementById('addStudentBtn');
 const batchStudentNamesInput = document.getElementById('batchStudentNames');
 const batchImportBtn = document.getElementById('batchImportBtn');
 const showInactiveBtn = document.getElementById('showInactiveBtn');
+const toggleStudentManageBtn = document.getElementById('toggleStudentManageBtn');
+const studentManagePanel = document.getElementById('studentManagePanel');
+const toggleTotalStatsBtn = document.getElementById('toggleTotalStatsBtn');
+const totalStatsPanel = document.getElementById('totalStatsPanel');
 const studentList = document.getElementById('studentList');
 const courseInput = document.getElementById('course');
 const lessonTypeInput = document.getElementById('lessonType');
@@ -33,6 +37,8 @@ const clearBtn = document.getElementById('clearBtn');
 const exportBtn = document.getElementById('exportBtn');
 
 let showInactiveStudents = false;
+let studentManageExpanded = false;
+let totalStatsExpanded = false;
 
 function today() {
   return new Date().toISOString().split('T')[0];
@@ -303,9 +309,21 @@ function renderRecords() {
   `).join('');
 }
 
+function renderStudentManagePanel() {
+  studentManagePanel.classList.toggle('collapsed', !studentManageExpanded);
+  toggleStudentManageBtn.textContent = studentManageExpanded ? '学生管理（点击收起）' : '学生管理（点击展开）';
+}
+
+function renderTotalStatsPanel() {
+  totalStatsPanel.classList.toggle('collapsed', !totalStatsExpanded);
+  toggleTotalStatsBtn.textContent = totalStatsExpanded ? '总统计（点击收起）' : '总统计（点击展开）';
+}
+
 function renderAll() {
   renderStudentOptions();
   renderStudentList();
+  renderStudentManagePanel();
+  renderTotalStatsPanel();
   renderRecords();
 }
 
@@ -398,6 +416,14 @@ batchImportBtn.addEventListener('click', () => {
 showInactiveBtn.addEventListener('click', () => {
   showInactiveStudents = !showInactiveStudents;
   renderStudentList();
+});
+toggleStudentManageBtn.addEventListener('click', () => {
+  studentManageExpanded = !studentManageExpanded;
+  renderStudentManagePanel();
+});
+toggleTotalStatsBtn.addEventListener('click', () => {
+  totalStatsExpanded = !totalStatsExpanded;
+  renderTotalStatsPanel();
 });
 
 monthFilter.addEventListener('input', renderRecords);
