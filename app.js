@@ -1,4 +1,4 @@
-const RECORDS_KEY = 'lesson-hours-records-v6';
+const RECORDS_KEY = 'lesson-hours-records-v7';
 const STUDENTS_KEY = 'lesson-hours-students-v1';
 
 const form = document.getElementById('recordForm');
@@ -9,6 +9,8 @@ const newStudentNameInput = document.getElementById('newStudentName');
 const addStudentQuickBtn = document.getElementById('addStudentQuickBtn');
 const manageStudentNameInput = document.getElementById('manageStudentName');
 const addStudentBtn = document.getElementById('addStudentBtn');
+const batchStudentNamesInput = document.getElementById('batchStudentNames');
+const batchImportBtn = document.getElementById('batchImportBtn');
 const showInactiveBtn = document.getElementById('showInactiveBtn');
 const studentList = document.getElementById('studentList');
 const courseInput = document.getElementById('course');
@@ -50,7 +52,7 @@ function toFixedHours(value) {
 }
 
 function normalizeStudent(name) {
-  return String(name || '').trim();
+  return String(name || '').replace(/\s+/g, '').trim();
 }
 
 function loadStudents() {
@@ -89,6 +91,41 @@ function ensureStudent(name, active = true) {
   return student;
 }
 
+function batchImportStudents(rawText) {
+  const names = String(rawText || '')
+    .split(/\r?\n|,|，|、|;|；/)
+    .map(normalizeStudent)
+    .filter(Boolean);
+
+  const uniqueNames = [...new Set(names)];
+  let added = 0;
+  let reactivated = 0;
+
+  const students = loadStudents();
+  uniqueNames.forEach((name) => {
+    const existing = students.find(item => item.name === name);
+    if (existing) {
+      if (!existing.active) {
+        existing.active = true;
+        reactivated += 1;
+      }
+      return;
+    }
+    students.push({
+      id: crypto.randomUUID(),
+      name,
+      active: true,
+      createdAt: new Date().toISOString(),
+    });
+    added += 1;
+  });
+
+  students.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+  saveStudents(students);
+  renderAll();
+  return { added, reactivated, total: uniqueNames.length };
+}
+
 function toggleStudentStatus(id) {
   const students = loadStudents();
   const target = students.find(item => item.id === id);
@@ -99,14 +136,15 @@ function toggleStudentStatus(id) {
 }
 
 function deleteStudent(id) {
+  const students = loadStudents();
+  const target = students.find(s => s.id === id);
   const records = loadRecords();
-  const used = records.some(item => item.studentId === id || item.studentName === (loadStudents().find(s => s.id === id)?.name));
+  const used = records.some(item => item.studentId === id || item.studentName === target?.name);
   if (used) {
     alert('这个学生已经有上课记录了，建议改成“已停课”，不要直接删除。');
     return;
   }
-  const students = loadStudents().filter(item => item.id !== id);
-  saveStudents(students);
+  saveStudents(students.filter(item => item.id !== id));
   renderAll();
 }
 
@@ -130,42 +168,25 @@ function migrateRecords(records) {
 
 function loadRecords() {
   try {
-    const v6 = JSON.parse(localStorage.getItem(RECORDS_KEY));
-    if (v6) return migrateRecords(v6);
+    const v7 = JSON.parse(localStorage.getItem(RECORDS_KEY));
+    if (v7) return migrateRecords(v7);
 
-    const v5 = JSON.parse(localStorage.getItem('lesson-hours-records-v5'));
-    if (v5) {
-      const migrated = migrateRecords(v5);
-      localStorage.setItem(RECORDS_KEY, JSON.stringify(migrated));
-      return migrated;
-    }
+    const legacyKeys = [
+      'lesson-hours-records-v6',
+      'lesson-hours-records-v5',
+      'lesson-hours-records-v4',
+      'lesson-hours-records-v3',
+      'lesson-hours-records-v2',
+      'lesson-hours-records-v1',
+    ];
 
-    const v4 = JSON.parse(localStorage.getItem('lesson-hours-records-v4'));
-    if (v4) {
-      const migrated = migrateRecords(v4);
-      localStorage.setItem(RECORDS_KEY, JSON.stringify(migrated));
-      return migrated;
-    }
-
-    const v3 = JSON.parse(localStorage.getItem('lesson-hours-records-v3'));
-    if (v3) {
-      const migrated = migrateRecords(v3);
-      localStorage.setItem(RECORDS_KEY, JSON.stringify(migrated));
-      return migrated;
-    }
-
-    const v2 = JSON.parse(localStorage.getItem('lesson-hours-records-v2'));
-    if (v2) {
-      const migrated = migrateRecords(v2);
-      localStorage.setItem(RECORDS_KEY, JSON.stringify(migrated));
-      return migrated;
-    }
-
-    const v1 = JSON.parse(localStorage.getItem('lesson-hours-records-v1'));
-    if (v1) {
-      const migrated = migrateRecords(v1);
-      localStorage.setItem(RECORDS_KEY, JSON.stringify(migrated));
-      return migrated;
+    for (const key of legacyKeys) {
+      const data = JSON.parse(localStorage.getItem(key));
+      if (data) {
+        const migrated = migrateRecords(data);
+        localStorage.setItem(RECORDS_KEY, JSON.stringify(migrated));
+        return migrated;
+      }
     }
 
     return [];
@@ -186,6 +207,7 @@ function renderStudentOptions() {
   const students = loadStudents();
   const activeStudents = students.filter(item => item.active);
   const currentValue = studentSelect.value;
+  const currentFilter = studentFilter.value;
 
   studentSelect.innerHTML = [
     '<option value="">请选择学生</option>',
@@ -200,6 +222,10 @@ function renderStudentOptions() {
     '<option value="">全部学生</option>',
     ...students.map(item => `<option value="${item.id}">${escapeHtml(item.name)}${item.active ? '' : '（已停课）'}</option>`),
   ].join('');
+
+  if (currentFilter && students.some(item => item.id === currentFilter)) {
+    studentFilter.value = currentFilter;
+  }
 }
 
 function renderStudentList() {
@@ -359,6 +385,16 @@ form.addEventListener('submit', (e) => {
 
 addStudentQuickBtn.addEventListener('click', () => addStudentFromInput(newStudentNameInput));
 addStudentBtn.addEventListener('click', () => addStudentFromInput(manageStudentNameInput));
+batchImportBtn.addEventListener('click', () => {
+  const text = batchStudentNamesInput.value;
+  if (!text.trim()) {
+    alert('请先粘贴学生名单。');
+    return;
+  }
+  const result = batchImportStudents(text);
+  batchStudentNamesInput.value = '';
+  alert(`导入完成：新增 ${result.added} 人，恢复 ${result.reactivated} 人。`);
+});
 showInactiveBtn.addEventListener('click', () => {
   showInactiveStudents = !showInactiveStudents;
   renderStudentList();

@@ -76,6 +76,21 @@ button.danger { background: #fee2e2; color: var(--danger); }
 .inline-row input { flex: 1; }
 
 .student-manage-grid { display: flex; flex-direction: column; gap: 12px; }
+.batch-box {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fafafa;
+}
+.batch-box textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fff;
+  resize: vertical;
+  font: inherit;
+}
 .student-list { display: flex; flex-direction: column; gap: 10px; }
 .student-chip {
   display: flex;
