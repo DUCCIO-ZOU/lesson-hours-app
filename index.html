@@ -47,7 +47,7 @@
             课时类型
             <select id="lessonType" required>
               <option value="阶梯课时">阶梯课时</option>
-              <option value="分成课时">分成课时</option>
+              <option value="陪练课时">陪练课时</option>
             </select>
           </label>
 
@@ -91,18 +91,23 @@
         </div>
       </section>
 
-      <section class="stats-grid three-cols month-stats">
-        <div class="card stat">
-          <span>本月课时</span>
-          <strong id="monthHours">0</strong>
-        </div>
-        <div class="card stat">
-          <span>本月阶梯课时</span>
-          <strong id="monthTierHours">0</strong>
-        </div>
-        <div class="card stat">
-          <span>本月分成课时</span>
-          <strong id="monthShareHours">0</strong>
+      <section class="card">
+        <button id="toggleMonthStatsBtn" type="button" class="collapse-btn">本月统计（点击展开）</button>
+        <div id="monthStatsPanel" class="month-stats-panel collapsed top-gap">
+          <section class="stats-grid three-cols month-stats">
+            <div class="card stat">
+              <span>本月总课时</span>
+              <strong id="monthHours">0</strong>
+            </div>
+            <div class="card stat">
+              <span>本月阶梯课时</span>
+              <strong id="monthTierHours">0</strong>
+            </div>
+            <div class="card stat">
+              <span>本月陪练课时</span>
+              <strong id="monthShareHours">0</strong>
+            </div>
+          </section>
         </div>
       </section>
 
@@ -123,7 +128,7 @@
               <strong id="tierHours">0</strong>
             </div>
             <div class="card stat compact-stat">
-              <span>总分成课时</span>
+              <span>总陪练课时</span>
               <strong id="shareHours">0</strong>
             </div>
           </section>
@@ -145,7 +150,7 @@
           <select id="typeFilter">
             <option value="">全部类型</option>
             <option value="阶梯课时">阶梯课时</option>
-            <option value="分成课时">分成课时</option>
+            <option value="陪练课时">陪练课时</option>
           </select>
           <select id="studentFilter">
             <option value="">全部学生</option>

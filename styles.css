@@ -84,6 +84,7 @@ button.danger { background: #fee2e2; color: var(--danger); }
 }
 .top-gap { margin-top: 12px; }
 .student-manage-panel.collapsed,
+.month-stats-panel.collapsed,
 .total-stats-panel.collapsed { display: none; }
 .student-manage-grid { display: flex; flex-direction: column; gap: 12px; }
 .batch-box {

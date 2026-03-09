@@ -14,6 +14,8 @@ const batchImportBtn = document.getElementById('batchImportBtn');
 const showInactiveBtn = document.getElementById('showInactiveBtn');
 const toggleStudentManageBtn = document.getElementById('toggleStudentManageBtn');
 const studentManagePanel = document.getElementById('studentManagePanel');
+const toggleMonthStatsBtn = document.getElementById('toggleMonthStatsBtn');
+const monthStatsPanel = document.getElementById('monthStatsPanel');
 const toggleTotalStatsBtn = document.getElementById('toggleTotalStatsBtn');
 const totalStatsPanel = document.getElementById('totalStatsPanel');
 const studentList = document.getElementById('studentList');
@@ -38,6 +40,7 @@ const exportBtn = document.getElementById('exportBtn');
 
 let showInactiveStudents = false;
 let studentManageExpanded = false;
+let monthStatsExpanded = false;
 let totalStatsExpanded = false;
 
 function today() {
@@ -165,7 +168,7 @@ function migrateRecords(records) {
       studentId: item.studentId || student?.id || '',
       studentName: studentName || student?.name || '',
       course: item.course || '',
-      lessonType: item.lessonType || '阶梯课时',
+      lessonType: item.lessonType === '分成课时' ? '陪练课时' : (item.lessonType || '阶梯课时'),
       hours: toFixedHours(item.hours ?? ((Number(item.minutes || 0) && Number(item.unitMinutes || 0)) ? Number(item.minutes) / Number(item.unitMinutes) : 0)),
       note: item.note || '',
     };
@@ -278,9 +281,9 @@ function renderRecords() {
   const filtered = getFilteredRecords(records);
   const currentMonthRecords = records.filter((item) => item.date.startsWith(currentMonth()));
   const tierRecords = records.filter((item) => item.lessonType === '阶梯课时');
-  const shareRecords = records.filter((item) => item.lessonType === '分成课时');
+  const shareRecords = records.filter((item) => item.lessonType === '陪练课时');
   const currentMonthTierRecords = currentMonthRecords.filter((item) => item.lessonType === '阶梯课时');
-  const currentMonthShareRecords = currentMonthRecords.filter((item) => item.lessonType === '分成课时');
+  const currentMonthShareRecords = currentMonthRecords.filter((item) => item.lessonType === '陪练课时');
 
   totalCount.textContent = String(records.length);
   totalHours.textContent = sumHours(records);
@@ -314,6 +317,11 @@ function renderStudentManagePanel() {
   toggleStudentManageBtn.textContent = studentManageExpanded ? '学生管理（点击收起）' : '学生管理（点击展开）';
 }
 
+function renderMonthStatsPanel() {
+  monthStatsPanel.classList.toggle('collapsed', !monthStatsExpanded);
+  toggleMonthStatsBtn.textContent = monthStatsExpanded ? '本月统计（点击收起）' : '本月统计（点击展开）';
+}
+
 function renderTotalStatsPanel() {
   totalStatsPanel.classList.toggle('collapsed', !totalStatsExpanded);
   toggleTotalStatsBtn.textContent = totalStatsExpanded ? '总统计（点击收起）' : '总统计（点击展开）';
@@ -323,6 +331,7 @@ function renderAll() {
   renderStudentOptions();
   renderStudentList();
   renderStudentManagePanel();
+  renderMonthStatsPanel();
   renderTotalStatsPanel();
   renderRecords();
 }
@@ -420,6 +429,10 @@ showInactiveBtn.addEventListener('click', () => {
 toggleStudentManageBtn.addEventListener('click', () => {
   studentManageExpanded = !studentManageExpanded;
   renderStudentManagePanel();
+});
+toggleMonthStatsBtn.addEventListener('click', () => {
+  monthStatsExpanded = !monthStatsExpanded;
+  renderMonthStatsPanel();
 });
 toggleTotalStatsBtn.addEventListener('click', () => {
   totalStatsExpanded = !totalStatsExpanded;
