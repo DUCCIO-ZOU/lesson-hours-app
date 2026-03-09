@@ -33,6 +33,14 @@
           </label>
 
           <label>
+            课时类型
+            <select id="lessonType" required>
+              <option value="阶梯课时">阶梯课时</option>
+              <option value="分成课时">分成课时</option>
+            </select>
+          </label>
+
+          <label>
             上课时长（分钟）
             <input type="number" id="minutes" min="1" step="1" placeholder="例如：60" required />
           </label>
@@ -51,7 +59,7 @@
         </form>
       </section>
 
-      <section class="stats-grid">
+      <section class="stats-grid seven-cols">
         <div class="card stat">
           <span>总记录数</span>
           <strong id="totalCount">0</strong>
@@ -64,6 +72,22 @@
           <span>本月课时</span>
           <strong id="monthHours">0</strong>
         </div>
+        <div class="card stat">
+          <span>阶梯课时</span>
+          <strong id="tierHours">0</strong>
+        </div>
+        <div class="card stat">
+          <span>分成课时</span>
+          <strong id="shareHours">0</strong>
+        </div>
+        <div class="card stat">
+          <span>本月阶梯课时</span>
+          <strong id="monthTierHours">0</strong>
+        </div>
+        <div class="card stat">
+          <span>本月分成课时</span>
+          <strong id="monthShareHours">0</strong>
+        </div>
       </section>
 
       <section class="card">
@@ -75,9 +99,14 @@
           </div>
         </div>
 
-        <div class="filters">
+        <div class="filters three-cols">
           <input type="month" id="monthFilter" />
           <input type="text" id="keywordFilter" placeholder="搜索老师 / 课程" />
+          <select id="typeFilter">
+            <option value="">全部类型</option>
+            <option value="阶梯课时">阶梯课时</option>
+            <option value="分成课时">分成课时</option>
+          </select>
         </div>
 
         <div class="table-wrap">
@@ -87,6 +116,7 @@
                 <th>日期</th>
                 <th>老师</th>
                 <th>课程</th>
+                <th>类型</th>
                 <th>时长</th>
                 <th>课时</th>
                 <th>备注</th>
