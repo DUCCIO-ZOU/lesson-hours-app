@@ -13,6 +13,8 @@
       <p>手机也能随手记，自动统计每月课时</p>
     </header>
 
+    <div id="toast" class="toast"></div>
+
     <main>
       <section class="card">
         <h2>新增上课记录</h2>
@@ -23,13 +25,14 @@
           </label>
 
           <label>
-            学生姓名
+            学生姓名（可多选）
             <div class="stack">
-              <select id="studentSelect" required></select>
+              <select id="studentSelect" multiple size="6"></select>
               <div class="inline-row">
                 <input type="text" id="newStudentName" placeholder="新学生姓名（可直接新增）" />
                 <button type="button" id="addStudentQuickBtn" class="secondary">新增</button>
               </div>
+              <small class="helper-text">可按住 Ctrl / Command 多选；手机上可逐个点选。</small>
             </div>
           </label>
 
@@ -131,41 +134,44 @@
       </section>
 
       <section class="card">
-        <div class="section-title">
-          <h2>记录列表</h2>
-          <div class="actions">
-            <button id="exportBtn" type="button" class="secondary">导出CSV</button>
-            <button id="clearBtn" type="button" class="danger">清空全部</button>
+        <button id="toggleRecordListBtn" type="button" class="collapse-btn">记录列表（点击展开）</button>
+        <div id="recordListPanel" class="record-list-panel collapsed top-gap">
+          <div class="section-title">
+            <h2>记录列表</h2>
+            <div class="actions">
+              <button id="exportBtn" type="button" class="secondary">导出CSV</button>
+              <button id="clearBtn" type="button" class="danger">清空全部</button>
+            </div>
           </div>
-        </div>
 
-        <div class="filters four-cols">
-          <input type="month" id="monthFilter" />
-          <input type="text" id="keywordFilter" placeholder="搜索学生 / 备注" />
-          <select id="typeFilter">
-            <option value="">全部类型</option>
-            <option value="阶梯课时">阶梯课时</option>
-            <option value="陪练课时">陪练课时</option>
-          </select>
-          <select id="studentFilter">
-            <option value="">全部学生</option>
-          </select>
-        </div>
+          <div class="filters four-cols">
+            <input type="month" id="monthFilter" />
+            <input type="text" id="keywordFilter" placeholder="搜索学生 / 备注" />
+            <select id="typeFilter">
+              <option value="">全部类型</option>
+              <option value="阶梯课时">阶梯课时</option>
+              <option value="陪练课时">陪练课时</option>
+            </select>
+            <select id="studentFilter">
+              <option value="">全部学生</option>
+            </select>
+          </div>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>日期</th>
-                <th>学生</th>
-                <th>类型</th>
-                <th>课时</th>
-                <th>备注</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="recordTable"></tbody>
-          </table>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>日期</th>
+                  <th>学生</th>
+                  <th>类型</th>
+                  <th>课时</th>
+                  <th>备注</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="recordTable"></tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>

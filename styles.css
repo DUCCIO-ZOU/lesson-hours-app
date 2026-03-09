@@ -31,6 +31,28 @@ body {
 .hero h1 { margin: 0 0 8px; font-size: 32px; }
 .hero p { margin: 0; color: var(--muted); }
 
+.toast {
+  position: sticky;
+  top: 10px;
+  z-index: 50;
+  margin: 0 auto 10px;
+  width: fit-content;
+  max-width: calc(100% - 28px);
+  background: #111827;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 999px;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .card {
   background: var(--card);
   border-radius: 16px;
@@ -54,13 +76,16 @@ label {
   font-size: 14px;
   color: var(--muted);
 }
-input, select, button { font: inherit; }
-input, select {
+input, select, button, textarea { font: inherit; }
+input, select, textarea {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px 14px;
   background: #fff;
+}
+select[multiple] {
+  min-height: 150px;
 }
 button {
   border: none;
@@ -77,6 +102,10 @@ button.danger { background: #fee2e2; color: var(--danger); }
 .stack { display: flex; flex-direction: column; gap: 8px; }
 .inline-row { display: flex; gap: 8px; }
 .inline-row input { flex: 1; }
+.helper-text {
+  color: var(--muted);
+  font-size: 12px;
+}
 .choice-label {
   display: block;
   margin-bottom: 8px;
@@ -109,22 +138,14 @@ button.danger { background: #fee2e2; color: var(--danger); }
 .top-gap { margin-top: 12px; }
 .student-manage-panel.collapsed,
 .month-stats-panel.collapsed,
-.total-stats-panel.collapsed { display: none; }
+.total-stats-panel.collapsed,
+.record-list-panel.collapsed { display: none; }
 .student-manage-grid { display: flex; flex-direction: column; gap: 12px; }
 .batch-box {
   border: 1px dashed var(--border);
   border-radius: 12px;
   padding: 12px;
   background: #fafafa;
-}
-.batch-box textarea {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  background: #fff;
-  resize: vertical;
-  font: inherit;
 }
 .student-list { display: flex; flex-direction: column; gap: 10px; }
 .student-chip {

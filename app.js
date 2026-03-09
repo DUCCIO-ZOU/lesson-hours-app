@@ -1,4 +1,4 @@
-const RECORDS_KEY = 'lesson-hours-records-v8';
+const RECORDS_KEY = 'lesson-hours-records-v9';
 const STUDENTS_KEY = 'lesson-hours-students-v1';
 
 const form = document.getElementById('recordForm');
@@ -17,6 +17,9 @@ const toggleMonthStatsBtn = document.getElementById('toggleMonthStatsBtn');
 const monthStatsPanel = document.getElementById('monthStatsPanel');
 const toggleTotalStatsBtn = document.getElementById('toggleTotalStatsBtn');
 const totalStatsPanel = document.getElementById('totalStatsPanel');
+const toggleRecordListBtn = document.getElementById('toggleRecordListBtn');
+const recordListPanel = document.getElementById('recordListPanel');
+const toast = document.getElementById('toast');
 const studentList = document.getElementById('studentList');
 const lessonTypeInput = document.getElementById('lessonType');
 const hoursInput = document.getElementById('hours');
@@ -41,6 +44,8 @@ let showInactiveStudents = false;
 let studentManageExpanded = false;
 let monthStatsExpanded = false;
 let totalStatsExpanded = false;
+let recordListExpanded = false;
+let toastTimer = null;
 
 function today() {
   return new Date().toISOString().split('T')[0];
@@ -56,6 +61,24 @@ function toFixedHours(value) {
 
 function normalizeStudent(name) {
   return String(name || '').replace(/\s+/g, '').trim();
+}
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+function getSelectedStudentIds() {
+  return Array.from(studentSelect.selectedOptions).map(option => option.value).filter(Boolean);
+}
+
+function setSelectedStudents(ids) {
+  const idSet = new Set(ids);
+  Array.from(studentSelect.options).forEach(option => {
+    option.selected = idSet.has(option.value);
+  });
 }
 
 function loadStudents() {
@@ -169,10 +192,11 @@ function migrateRecords(records) {
 
 function loadRecords() {
   try {
-    const v8 = JSON.parse(localStorage.getItem(RECORDS_KEY));
-    if (v8) return migrateRecords(v8);
+    const v9 = JSON.parse(localStorage.getItem(RECORDS_KEY));
+    if (v9) return migrateRecords(v9);
 
     const legacyKeys = [
+      'lesson-hours-records-v8',
       'lesson-hours-records-v7',
       'lesson-hours-records-v6',
       'lesson-hours-records-v5',
@@ -215,17 +239,11 @@ function setHoursChoice(value) {
 function renderStudentOptions() {
   const students = loadStudents();
   const activeStudents = students.filter(item => item.active);
-  const currentValue = studentSelect.value;
+  const currentValues = getSelectedStudentIds();
   const currentFilter = studentFilter.value;
 
-  studentSelect.innerHTML = [
-    '<option value="">请选择学生</option>',
-    ...activeStudents.map(item => `<option value="${item.id}">${escapeHtml(item.name)}</option>`),
-  ].join('');
-
-  if (currentValue && activeStudents.some(item => item.id === currentValue)) {
-    studentSelect.value = currentValue;
-  }
+  studentSelect.innerHTML = activeStudents.map(item => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join('');
+  setSelectedStudents(currentValues.filter(id => activeStudents.some(item => item.id === id)));
 
   studentFilter.innerHTML = [
     '<option value="">全部学生</option>',
@@ -325,12 +343,18 @@ function renderTotalStatsPanel() {
   toggleTotalStatsBtn.textContent = totalStatsExpanded ? '总统计（点击收起）' : '总统计（点击展开）';
 }
 
+function renderRecordListPanel() {
+  recordListPanel.classList.toggle('collapsed', !recordListExpanded);
+  toggleRecordListBtn.textContent = recordListExpanded ? '记录列表（点击收起）' : '记录列表（点击展开）';
+}
+
 function renderAll() {
   renderStudentOptions();
   renderStudentList();
   renderStudentManagePanel();
   renderMonthStatsPanel();
   renderTotalStatsPanel();
+  renderRecordListPanel();
   renderRecords();
 }
 
@@ -359,51 +383,57 @@ function addStudentFromInput(inputEl) {
   const student = ensureStudent(name, true);
   inputEl.value = '';
   renderAll();
-  studentSelect.value = student.id;
+  setSelectedStudents([student.id]);
   return student;
 }
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
 
-  let selectedStudentId = studentSelect.value;
-  if (!selectedStudentId && newStudentNameInput.value.trim()) {
+  let selectedStudentIds = getSelectedStudentIds();
+  if (!selectedStudentIds.length && newStudentNameInput.value.trim()) {
     const student = addStudentFromInput(newStudentNameInput);
-    selectedStudentId = student?.id || '';
+    selectedStudentIds = student ? [student.id] : [];
   }
 
-  if (!selectedStudentId) {
-    alert('请先选择学生，或者先新增一个学生。');
+  if (!selectedStudentIds.length) {
+    alert('请先选择至少一个学生，或者先新增一个学生。');
     return;
   }
 
   const students = loadStudents();
-  const selectedStudent = students.find(item => item.id === selectedStudentId);
-  if (!selectedStudent) {
-    alert('未找到这个学生，请重新选择。');
+  const selectedStudents = selectedStudentIds
+    .map(id => students.find(item => item.id === id))
+    .filter(Boolean);
+
+  if (!selectedStudents.length) {
+    alert('未找到所选学生，请重新选择。');
     return;
   }
 
-  const record = {
-    id: crypto.randomUUID(),
-    date: dateInput.value,
-    studentId: selectedStudent.id,
-    studentName: selectedStudent.name,
-    lessonType: lessonTypeInput.value,
-    hours: toFixedHours(hoursInput.value),
-    note: noteInput.value.trim(),
-  };
-
   const records = loadRecords();
-  records.push(record);
+  selectedStudents.forEach((student) => {
+    records.push({
+      id: crypto.randomUUID(),
+      date: dateInput.value,
+      studentId: student.id,
+      studentName: student.name,
+      lessonType: lessonTypeInput.value,
+      hours: toFixedHours(hoursInput.value),
+      note: noteInput.value.trim(),
+    });
+  });
   saveRecords(records);
 
+  const selectedIdsToKeep = selectedStudents.map(student => student.id);
   form.reset();
   dateInput.value = today();
-  lessonTypeInput.value = record.lessonType;
-  studentSelect.value = selectedStudent.id;
+  lessonTypeInput.value = selectedStudents[0] ? lessonTypeInput.value || '阶梯课时' : '阶梯课时';
   setHoursChoice('1');
   renderRecords();
+  renderStudentOptions();
+  setSelectedStudents(selectedIdsToKeep);
+  showToast(`已保存 ${selectedStudents.length} 条记录`);
 });
 
 hoursChoiceGroup.addEventListener('click', (e) => {
@@ -422,7 +452,7 @@ batchImportBtn.addEventListener('click', () => {
   }
   const result = batchImportStudents(text);
   batchStudentNamesInput.value = '';
-  alert(`导入完成：新增 ${result.added} 人，恢复 ${result.reactivated} 人。`);
+  showToast(`导入完成：新增 ${result.added} 人，恢复 ${result.reactivated} 人`);
 });
 showInactiveBtn.addEventListener('click', () => {
   showInactiveStudents = !showInactiveStudents;
@@ -440,6 +470,10 @@ toggleTotalStatsBtn.addEventListener('click', () => {
   totalStatsExpanded = !totalStatsExpanded;
   renderTotalStatsPanel();
 });
+toggleRecordListBtn.addEventListener('click', () => {
+  recordListExpanded = !recordListExpanded;
+  renderRecordListPanel();
+});
 
 monthFilter.addEventListener('input', renderRecords);
 keywordFilter.addEventListener('input', renderRecords);
@@ -450,6 +484,7 @@ clearBtn.addEventListener('click', () => {
   if (!confirm('确定要清空全部记录吗？此操作无法撤销。')) return;
   localStorage.removeItem(RECORDS_KEY);
   renderRecords();
+  showToast('已清空全部记录');
 });
 
 exportBtn.addEventListener('click', () => {
@@ -472,6 +507,7 @@ exportBtn.addEventListener('click', () => {
   link.download = `课时记录-${currentMonth()}.csv`;
   link.click();
   URL.revokeObjectURL(url);
+  showToast('导出成功');
 });
 
 dateInput.value = today();
