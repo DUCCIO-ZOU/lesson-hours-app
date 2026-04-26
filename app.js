@@ -51,9 +51,12 @@ let studentManageExpanded = false;
 let monthStatsExpanded = false;
 let totalStatsExpanded = false;
 let recordListExpanded = false;
+let classListExpanded = false;
 let toastTimer = null;
 let studentsState = [];
 let recordsState = [];
+let classRecordsState = [];
+let selectedPerformance = '良';
 
 function today() { return new Date().toISOString().split('T')[0]; }
 function currentMonth() { return new Date().toISOString().slice(0, 7); }
@@ -93,6 +96,36 @@ function setAuthUI(session) {
   }
 }
 
+// 主 Tab 切换
+function switchMainTab(tab) {
+  document.querySelectorAll('.main-tab').forEach((el, i) => {
+    el.classList.toggle('active', (i === 0 && tab === 'hours') || (i === 1 && tab === 'class'));
+  });
+  document.getElementById('tab-hours').classList.toggle('active', tab === 'hours');
+  document.getElementById('tab-class').classList.toggle('active', tab === 'class');
+  if (tab === 'class') renderClassStudentFilter();
+}
+window.switchMainTab = switchMainTab;
+
+// 学生表现选择
+function selectPerf(perf, el) {
+  selectedPerformance = perf;
+  document.querySelectorAll('.perf-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+window.selectPerf = selectPerf;
+
+// 课堂记录列表展开
+function toggleClassList() {
+  classListExpanded = !classListExpanded;
+  const panel = document.getElementById('classListPanel');
+  const btn = panel.previousElementSibling;
+  panel.classList.toggle('collapsed', !classListExpanded);
+  btn.textContent = classListExpanded ? '课堂记录列表（点击收起）' : '课堂记录列表（点击展开）';
+  if (classListExpanded) renderClassRecords();
+}
+window.toggleClassList = toggleClassList;
+
 async function signInWithGitHub() {
   const redirectTo = window.location.origin + window.location.pathname;
   const { error } = await supabaseClient.auth.signInWithOAuth({ provider: 'github', options: { redirectTo } });
@@ -126,8 +159,26 @@ async function fetchRecords() {
     note: item.note || '',
   }));
 }
+async function fetchClassRecords() {
+  const { data, error } = await supabaseClient
+    .from('class_records')
+    .select('id, date, student_id, content, homework, performance, note, students(name)')
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  classRecordsState = (data || []).map(item => ({
+    id: item.id,
+    date: item.date,
+    studentId: item.student_id,
+    studentName: item.students?.name || '',
+    content: item.content || '',
+    homework: item.homework || '',
+    performance: item.performance || '',
+    note: item.note || '',
+  }));
+}
 async function refreshData() {
-  await Promise.all([fetchStudents(), fetchRecords()]);
+  await Promise.all([fetchStudents(), fetchRecords(), fetchClassRecords()]);
   renderAll();
 }
 
@@ -151,8 +202,7 @@ async function ensureStudent(name, active = true) {
 }
 async function batchImportStudents(rawText) {
   const names = [...new Set(String(rawText || '').split(/\r?\n|,|，|、|;|；/).map(normalizeStudent).filter(Boolean))];
-  let added = 0;
-  let reactivated = 0;
+  let added = 0, reactivated = 0;
   for (const name of names) {
     const existing = studentsState.find(item => item.name === name);
     if (existing) {
@@ -182,7 +232,7 @@ async function toggleStudentStatus(id) {
 async function deleteStudent(id) {
   const target = studentsState.find(s => s.id === id);
   const used = recordsState.some(item => item.studentId === id || item.studentName === target?.name);
-  if (used) return alert('这个学生已经有上课记录了，建议改成“已停课”，不要直接删除。');
+  if (used) return alert('这个学生已经有上课记录了，建议改成"已停课"，不要直接删除。');
   const { error } = await supabaseClient.from('students').delete().eq('id', id);
   if (error) return alert(error.message);
   await fetchStudents();
@@ -190,6 +240,7 @@ async function deleteStudent(id) {
 }
 window.toggleStudentStatus = toggleStudentStatus;
 window.deleteStudent = deleteStudent;
+
 async function removeRecord(id) {
   const { error } = await supabaseClient.from('lesson_records').delete().eq('id', id);
   if (error) return alert(error.message);
@@ -197,6 +248,91 @@ async function removeRecord(id) {
   renderRecords();
 }
 window.removeRecord = removeRecord;
+
+async function removeClassRecord(id) {
+  const { error } = await supabaseClient.from('class_records').delete().eq('id', id);
+  if (error) return alert(error.message);
+  await fetchClassRecords();
+  renderClassRecords();
+}
+window.removeClassRecord = removeClassRecord;
+
+// 保存课堂记录
+async function saveClassRecord() {
+  const date = document.getElementById('class-date').value;
+  const studentId = document.getElementById('class-student').value;
+  const content = document.getElementById('class-content').value.trim();
+  const homework = document.getElementById('class-homework').value.trim();
+  const note = document.getElementById('class-note').value.trim();
+
+  if (!date || !studentId) { showToast('请填写日期和学生姓名'); return; }
+
+  const { error } = await supabaseClient.from('class_records').insert({
+    date,
+    student_id: studentId,
+    content,
+    homework,
+    performance: selectedPerformance,
+    note,
+  });
+
+  if (error) { alert(error.message); return; }
+
+  document.getElementById('class-content').value = '';
+  document.getElementById('class-homework').value = '';
+  document.getElementById('class-note').value = '';
+  document.getElementById('class-student').value = '';
+  await fetchClassRecords();
+  if (classListExpanded) renderClassRecords();
+  showToast('课堂记录已保存 ✓');
+}
+window.saveClassRecord = saveClassRecord;
+
+function renderClassStudentFilter() {
+  const sel = document.getElementById('class-student');
+  const filterSel = document.getElementById('class-student-filter');
+  const active = studentsState.filter(s => s.active);
+  sel.innerHTML = '<option value="">选择学生</option>' + active.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  filterSel.innerHTML = '<option value="">全部学生</option>' + studentsState.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+}
+
+function renderClassRecords() {
+  const month = document.getElementById('class-month-filter').value;
+  const studentId = document.getElementById('class-student-filter').value;
+  const list = document.getElementById('class-record-list');
+
+  let filtered = classRecordsState.filter(r => {
+    const matchMonth = !month || r.date.startsWith(month);
+    const matchStudent = !studentId || r.studentId === studentId;
+    return matchMonth && matchStudent;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = '<div style="text-align:center;color:#999;padding:20px;font-size:13px;">暂无课堂记录</div>';
+    return;
+  }
+
+  const perfClass = p => p === '优' ? 'perf-good' : p === '一般' ? 'perf-bad' : 'perf-ok';
+
+  list.innerHTML = filtered.map(r => `
+    <div class="class-record-item">
+      <div class="class-record-header">
+        <div>
+          <span class="class-record-name">${escapeHtml(r.studentName)}</span>
+          <span class="class-record-date" style="margin-left:8px">${r.date}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="class-record-perf ${perfClass(r.performance)}">${escapeHtml(r.performance)}</span>
+          <button class="delete-btn" onclick="removeClassRecord('${r.id}')">删除</button>
+        </div>
+      </div>
+      <div class="class-record-body">
+        ${r.content ? `<div><strong>本节课：</strong>${escapeHtml(r.content)}</div>` : ''}
+        ${r.homework ? `<div><strong>作业：</strong>${escapeHtml(r.homework)}</div>` : ''}
+        ${r.note ? `<div><strong>备注：</strong>${escapeHtml(r.note)}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
 
 function renderStudentOptions() {
   const activeStudents = studentsState.filter(item => item.active);
@@ -285,6 +421,8 @@ function renderAll() {
   renderTotalStatsPanel();
   renderRecordListPanel();
   renderRecords();
+  renderClassStudentFilter();
+  if (classListExpanded) renderClassRecords();
 }
 
 async function addStudentFromInput(inputEl) {
@@ -359,6 +497,9 @@ studentFilter.addEventListener('input', renderRecords);
 loginBtn.addEventListener('click', signInWithGitHub);
 logoutBtn.addEventListener('click', signOut);
 
+document.getElementById('class-month-filter').addEventListener('input', () => { if (classListExpanded) renderClassRecords(); });
+document.getElementById('class-student-filter').addEventListener('input', () => { if (classListExpanded) renderClassRecords(); });
+
 exportBtn.addEventListener('click', () => {
   if (!recordsState.length) return alert('暂无可导出的记录');
   const rows = getFilteredRecords(recordsState);
@@ -378,6 +519,8 @@ exportBtn.addEventListener('click', () => {
 
 async function init() {
   dateInput.value = today();
+  document.getElementById('class-date').value = today();
+  document.getElementById('class-month-filter').value = currentMonth();
   monthFilter.value = currentMonth();
   setHoursChoice('1');
 
