@@ -11,18 +11,22 @@
     .main-tab.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
+
+    /* 课堂记录样式 */
     .class-form { display: flex; flex-direction: column; gap: 14px; }
-    .class-form label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #333; }
-    .class-form input[type=date], .class-form select, .class-form textarea {
-      padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; background: #fafafa; outline: none; font-family: inherit;
+    .class-form label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #555; }
+    .class-form input[type=date], .class-form select, .class-form textarea, .class-form input[type=text] {
+      padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; background: #fafafa; outline: none; font-family: inherit; width: 100%;
     }
     .class-form textarea { height: 80px; resize: vertical; }
     .perf-btns { display: flex; gap: 8px; }
     .perf-btn { flex: 1; padding: 9px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; cursor: pointer; font-size: 13px; color: #666; text-align: center; }
     .perf-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; font-weight: 500; }
+
+    /* 课堂记录列表 */
     .class-record-item { padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
     .class-record-item:last-child { border-bottom: none; }
-    .class-record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .class-record-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
     .class-record-name { font-size: 14px; font-weight: 600; }
     .class-record-date { font-size: 12px; color: #999; }
     .class-record-perf { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 500; }
@@ -35,6 +39,32 @@
     .class-filters select, .class-filters input[type=month] { flex: 1; min-width: 120px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: #fafafa; outline: none; }
     .delete-btn { font-size: 11px; color: #999; background: none; border: none; cursor: pointer; padding: 2px 6px; }
     .delete-btn:hover { color: #c0392b; }
+
+    /* 学生信息标签 */
+    .student-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .student-tag { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+    .tag-gender-男 { background: #dbeafe; color: #1d4ed8; }
+    .tag-gender-女 { background: #fce7f3; color: #9d174d; }
+    .tag-subject { background: #d1fae5; color: #065f46; }
+    .tag-direction { background: #fef3c7; color: #92400e; }
+    .tag-level { background: #ede9fe; color: #5b21b6; }
+
+    /* 选学生下拉显示信息 */
+    .student-info-box { background: #f8f9fa; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #555; margin-top: 6px; display: none; }
+    .student-info-box.show { display: block; }
+
+    /* 新增学生表单 */
+    .add-student-form { display: flex; flex-direction: column; gap: 10px; background: #f8f9fa; border-radius: 10px; padding: 12px; margin-top: 10px; }
+    .add-student-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #555; }
+    .add-student-form input, .add-student-form select { padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: #fff; outline: none; font-family: inherit; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* 学生chip信息 */
+    .chip-info { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .chip-detail { font-size: 11px; color: #888; }
+
+    /* 隐藏/显示信息按钮 */
+    .toggle-info-btn { font-size: 11px; color: #2563eb; background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -61,7 +91,7 @@
         <button id="logoutBtn" type="button" class="secondary">退出登录</button>
       </section>
 
-      <!-- 主 Tab 切换 -->
+      <!-- 主 Tab -->
       <div class="main-tabs">
         <button class="main-tab active" onclick="switchMainTab('hours')">课时记录</button>
         <button class="main-tab" onclick="switchMainTab('class')">课堂记录</button>
@@ -76,7 +106,6 @@
               日期
               <input type="date" id="date" required />
             </label>
-
             <label>
               学生姓名（可多选）
               <div class="stack">
@@ -88,7 +117,6 @@
                 <small class="helper-text">可按住 Ctrl / Command 多选；手机上可逐个点选。</small>
               </div>
             </label>
-
             <label>
               课时类型
               <select id="lessonType" required>
@@ -96,7 +124,6 @@
                 <option value="陪练课时">陪练课时</option>
               </select>
             </label>
-
             <div class="hour-choice-block full">
               <span class="choice-label">课时数</span>
               <div class="hour-choice-group" id="hoursChoiceGroup">
@@ -106,12 +133,10 @@
               </div>
               <input type="hidden" id="hours" value="1" />
             </div>
-
             <label>
               备注（可不填）
               <input type="text" id="note" placeholder="例如：试听课 / 补课" />
             </label>
-
             <button type="submit" class="primary full">保存记录</button>
           </form>
         </section>
@@ -126,17 +151,49 @@
               </div>
             </div>
             <div class="student-manage-grid">
-              <div class="inline-row">
-                <input type="text" id="manageStudentName" placeholder="输入学生姓名后新增" />
+              <!-- 新增学生表单 -->
+              <div class="add-student-form">
+                <strong style="font-size:14px">新增学生</strong>
+                <div class="form-row">
+                  <label>姓名 <input type="text" id="manageStudentName" placeholder="输入姓名" /></label>
+                  <label>性别
+                    <select id="manageGender">
+                      <option value="">不填</option>
+                      <option value="男">男</option>
+                      <option value="女">女</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="form-row">
+                  <label>专业
+                    <select id="manageSubject">
+                      <option value="">不填</option>
+                      <option value="钢琴">钢琴</option>
+                      <option value="美声">美声</option>
+                      <option value="童声">童声</option>
+                    </select>
+                  </label>
+                  <label>教学方向
+                    <select id="manageDirection">
+                      <option value="">不填</option>
+                      <option value="兴趣">兴趣</option>
+                      <option value="考级">考级</option>
+                      <option value="兴趣+考级">兴趣+考级</option>
+                    </select>
+                  </label>
+                </div>
+                <label>目前级别 <input type="text" id="manageLevel" placeholder="例如：中国院九级、英皇五级" /></label>
                 <button id="addStudentBtn" type="button" class="primary">新增学生</button>
               </div>
+
               <div class="batch-box">
                 <label>
-                  批量导入学生
-                  <textarea id="batchStudentNames" rows="8" placeholder="一行一个学生姓名，例如：&#10;赵静&#10;潘昊睿&#10;苏奕瑀"></textarea>
+                  批量导入学生（仅姓名，信息后续编辑）
+                  <textarea id="batchStudentNames" rows="6" placeholder="一行一个学生姓名，例如：&#10;赵静&#10;潘昊睿&#10;苏奕瑀"></textarea>
                 </label>
                 <button id="batchImportBtn" type="button" class="primary">批量导入</button>
               </div>
+
               <div id="studentList" class="student-list"></div>
             </div>
           </div>
@@ -146,18 +203,9 @@
           <button id="toggleMonthStatsBtn" type="button" class="collapse-btn">本月统计（点击展开）</button>
           <div id="monthStatsPanel" class="month-stats-panel collapsed top-gap">
             <section class="stats-grid three-cols month-stats">
-              <div class="card stat">
-                <span>本月总课时</span>
-                <strong id="monthHours">0</strong>
-              </div>
-              <div class="card stat">
-                <span>本月阶梯课时</span>
-                <strong id="monthTierHours">0</strong>
-              </div>
-              <div class="card stat">
-                <span>本月陪练课时</span>
-                <strong id="monthShareHours">0</strong>
-              </div>
+              <div class="card stat"><span>本月总课时</span><strong id="monthHours">0</strong></div>
+              <div class="card stat"><span>本月阶梯课时</span><strong id="monthTierHours">0</strong></div>
+              <div class="card stat"><span>本月陪练课时</span><strong id="monthShareHours">0</strong></div>
             </section>
           </div>
         </section>
@@ -166,22 +214,10 @@
           <button id="toggleTotalStatsBtn" type="button" class="collapse-btn">总统计（点击展开）</button>
           <div id="totalStatsPanel" class="total-stats-panel collapsed top-gap">
             <section class="stats-grid four-total-cols">
-              <div class="card stat compact-stat">
-                <span>总记录数</span>
-                <strong id="totalCount">0</strong>
-              </div>
-              <div class="card stat compact-stat">
-                <span>总课时</span>
-                <strong id="totalHours">0</strong>
-              </div>
-              <div class="card stat compact-stat">
-                <span>总阶梯课时</span>
-                <strong id="tierHours">0</strong>
-              </div>
-              <div class="card stat compact-stat">
-                <span>总陪练课时</span>
-                <strong id="shareHours">0</strong>
-              </div>
+              <div class="card stat compact-stat"><span>总记录数</span><strong id="totalCount">0</strong></div>
+              <div class="card stat compact-stat"><span>总课时</span><strong id="totalHours">0</strong></div>
+              <div class="card stat compact-stat"><span>总阶梯课时</span><strong id="tierHours">0</strong></div>
+              <div class="card stat compact-stat"><span>总陪练课时</span><strong id="shareHours">0</strong></div>
             </section>
           </div>
         </section>
@@ -203,21 +239,12 @@
                 <option value="阶梯课时">阶梯课时</option>
                 <option value="陪练课时">陪练课时</option>
               </select>
-              <select id="studentFilter">
-                <option value="">全部学生</option>
-              </select>
+              <select id="studentFilter"><option value="">全部学生</option></select>
             </div>
             <div class="table-wrap">
               <table>
                 <thead>
-                  <tr>
-                    <th>日期</th>
-                    <th>学生</th>
-                    <th>类型</th>
-                    <th>课时</th>
-                    <th>备注</th>
-                    <th>操作</th>
-                  </tr>
+                  <tr><th>日期</th><th>学生</th><th>类型</th><th>课时</th><th>备注</th><th>操作</th></tr>
                 </thead>
                 <tbody id="recordTable"></tbody>
               </table>
@@ -231,34 +258,22 @@
         <section class="card">
           <h2>新增课堂记录</h2>
           <div class="class-form">
-            <label>
-              上课日期
-              <input type="date" id="class-date">
-            </label>
-            <label>
-              学生姓名
-              <select id="class-student">
+            <label>上课日期 <input type="date" id="class-date"></label>
+            <label>学生姓名
+              <select id="class-student" onchange="showStudentInfo(this.value)">
                 <option value="">选择学生</option>
               </select>
             </label>
-            <label>
-              本节课内容
-              <textarea id="class-content" placeholder="填写本节课练习曲目或教学内容..."></textarea>
-            </label>
-            <label>
-              课后作业
-              <textarea id="class-homework" placeholder="填写下节课需要练习的内容..." style="height:60px"></textarea>
-            </label>
+            <div id="class-student-info" class="student-info-box"></div>
+            <label>本节课内容 <textarea id="class-content" placeholder="填写本节课练习曲目或教学内容..."></textarea></label>
+            <label>课后作业 <textarea id="class-homework" placeholder="填写下节课需要练习的内容..." style="height:60px"></textarea></label>
             <label>学生表现</label>
             <div class="perf-btns">
               <button class="perf-btn" onclick="selectPerf('优', this)">优</button>
               <button class="perf-btn active" onclick="selectPerf('良', this)">良</button>
               <button class="perf-btn" onclick="selectPerf('一般', this)">一般</button>
             </div>
-            <label>
-              备注（选填）
-              <input type="text" id="class-note" placeholder="例如：补课、家长沟通...">
-            </label>
+            <label>备注（选填） <input type="text" id="class-note" placeholder="例如：补课、家长沟通..."></label>
             <button class="primary" onclick="saveClassRecord()">保存课堂记录</button>
           </div>
         </section>
@@ -268,9 +283,7 @@
           <div id="classListPanel" class="collapsed top-gap">
             <div class="class-filters">
               <input type="month" id="class-month-filter">
-              <select id="class-student-filter">
-                <option value="">全部学生</option>
-              </select>
+              <select id="class-student-filter"><option value="">全部学生</option></select>
             </div>
             <div id="class-record-list"></div>
           </div>
