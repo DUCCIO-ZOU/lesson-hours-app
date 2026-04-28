@@ -413,8 +413,8 @@ function renderClassRecords() {
         </div>
       </div>
       <div class="class-record-body">
-        ${r.content ? `<div><strong>本节课：</strong>${escapeHtml(r.content)}</div>` : ''}
-        ${r.homework ? `<div><strong>作业：</strong>${escapeHtml(r.homework)}</div>` : ''}
+        ${r.content ? `<div><strong>本节课：</strong>${escapeHtml(r.content).replace(/\n/g, '<br>')}</div>` : ''}
+        ${r.homework ? `<div><strong>作业：</strong>${escapeHtml(r.homework).replace(/\n/g, '<br>')}</div>` : ''}
         ${r.note ? `<div><strong>备注：</strong>${escapeHtml(r.note)}</div>` : ''}
       </div>
     </div>`;
