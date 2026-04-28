@@ -11,19 +11,15 @@
     .main-tab.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
-
-    /* 课堂记录样式 */
     .class-form { display: flex; flex-direction: column; gap: 14px; }
     .class-form label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #555; }
     .class-form input[type=date], .class-form select, .class-form textarea, .class-form input[type=text] {
-      padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; background: #fafafa; outline: none; font-family: inherit; width: 100%;
+      padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; background: #fafafa; outline: none; font-family: inherit; width: 100%; box-sizing: border-box;
     }
     .class-form textarea { height: 80px; resize: vertical; }
     .perf-btns { display: flex; gap: 8px; }
     .perf-btn { flex: 1; padding: 9px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; cursor: pointer; font-size: 13px; color: #666; text-align: center; }
     .perf-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; font-weight: 500; }
-
-    /* 课堂记录列表 */
     .class-record-item { padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
     .class-record-item:last-child { border-bottom: none; }
     .class-record-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
@@ -39,8 +35,6 @@
     .class-filters select, .class-filters input[type=month] { flex: 1; min-width: 120px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: #fafafa; outline: none; }
     .delete-btn { font-size: 11px; color: #999; background: none; border: none; cursor: pointer; padding: 2px 6px; }
     .delete-btn:hover { color: #c0392b; }
-
-    /* 学生信息标签 */
     .student-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
     .student-tag { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
     .tag-gender-男 { background: #dbeafe; color: #1d4ed8; }
@@ -48,23 +42,12 @@
     .tag-subject { background: #d1fae5; color: #065f46; }
     .tag-direction { background: #fef3c7; color: #92400e; }
     .tag-level { background: #ede9fe; color: #5b21b6; }
-
-    /* 选学生下拉显示信息 */
     .student-info-box { background: #f8f9fa; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #555; margin-top: 6px; display: none; }
     .student-info-box.show { display: block; }
-
-    /* 新增学生表单 */
     .add-student-form { display: flex; flex-direction: column; gap: 10px; background: #f8f9fa; border-radius: 10px; padding: 12px; margin-top: 10px; }
     .add-student-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #555; }
     .add-student-form input, .add-student-form select { padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: #fff; outline: none; font-family: inherit; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    /* 学生chip信息 */
-    .chip-info { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-    .chip-detail { font-size: 11px; color: #888; }
-
-    /* 隐藏/显示信息按钮 */
-    .toggle-info-btn { font-size: 11px; color: #2563eb; background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -91,7 +74,6 @@
         <button id="logoutBtn" type="button" class="secondary">退出登录</button>
       </section>
 
-      <!-- 主 Tab -->
       <div class="main-tabs">
         <button class="main-tab active" onclick="switchMainTab('hours')">课时记录</button>
         <button class="main-tab" onclick="switchMainTab('class')">课堂记录</button>
@@ -102,10 +84,7 @@
         <section class="card">
           <h2>新增上课记录</h2>
           <form id="recordForm" class="form-grid simple-form-grid">
-            <label>
-              日期
-              <input type="date" id="date" required />
-            </label>
+            <label>日期 <input type="date" id="date" required /></label>
             <label>
               学生姓名（可多选）
               <div class="stack">
@@ -117,8 +96,7 @@
                 <small class="helper-text">可按住 Ctrl / Command 多选；手机上可逐个点选。</small>
               </div>
             </label>
-            <label>
-              课时类型
+            <label>课时类型
               <select id="lessonType" required>
                 <option value="阶梯课时">阶梯课时</option>
                 <option value="陪练课时">陪练课时</option>
@@ -133,10 +111,7 @@
               </div>
               <input type="hidden" id="hours" value="1" />
             </div>
-            <label>
-              备注（可不填）
-              <input type="text" id="note" placeholder="例如：试听课 / 补课" />
-            </label>
+            <label>备注（可不填） <input type="text" id="note" placeholder="例如：试听课 / 补课" /></label>
             <button type="submit" class="primary full">保存记录</button>
           </form>
         </section>
@@ -151,7 +126,6 @@
               </div>
             </div>
             <div class="student-manage-grid">
-              <!-- 新增学生表单 -->
               <div class="add-student-form">
                 <strong style="font-size:14px">新增学生</strong>
                 <div class="form-row">

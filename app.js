@@ -56,7 +56,7 @@ let toastTimer = null;
 let studentsState = [];
 let recordsState = [];
 let classRecordsState = [];
-let selectedPerformance = 3; // 默认3个👍
+let selectedPerformance = '良';
 
 function today() { return new Date().toISOString().split('T')[0]; }
 function currentMonth() { return new Date().toISOString().slice(0, 7); }
@@ -65,11 +65,11 @@ function normalizeStudent(name) { return String(name || '').replace(/\s+/g, '').
 function escapeHtml(str) {
   return String(str).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 }
-function showToast(message, type = 'success') {
+function showToast(message) {
   toast.textContent = message;
-  toast.className = 'toast show' + (type === 'error' ? ' toast-error' : '');
+  toast.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
 }
 function getSelectedStudentIds() {
   return Array.from(studentSelect.selectedOptions).map(option => option.value).filter(Boolean);
@@ -96,22 +96,35 @@ function setAuthUI(session) {
   }
 }
 
-// 👍 评分
-function selectPerf(score) {
-  selectedPerformance = score;
-  document.querySelectorAll('.thumb-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', i < score);
-  });
+// 学生标签渲染
+function renderStudentTags(student) {
+  const tags = [];
+  if (student.gender) tags.push(`<span class="student-tag tag-gender-${student.gender}">${escapeHtml(student.gender)}</span>`);
+  if (student.subject) tags.push(`<span class="student-tag tag-subject">${escapeHtml(student.subject)}</span>`);
+  if (student.direction) tags.push(`<span class="student-tag tag-direction">${escapeHtml(student.direction)}</span>`);
+  if (student.level) tags.push(`<span class="student-tag tag-level">${escapeHtml(student.level)}</span>`);
+  return tags.length ? `<div class="student-tags">${tags.join('')}</div>` : '';
 }
-window.selectPerf = selectPerf;
 
-function renderThumbButtons() {
-  const container = document.getElementById('perf-thumbs');
-  if (!container) return;
-  container.innerHTML = Array.from({length: 5}, (_, i) => 
-    `<button type="button" class="thumb-btn ${i < selectedPerformance ? 'active' : ''}" onclick="selectPerf(${i+1})">👍</button>`
-  ).join('');
+// 选学生后显示信息
+function showStudentInfo(studentId) {
+  const box = document.getElementById('class-student-info');
+  if (!studentId) { box.classList.remove('show'); return; }
+  const s = studentsState.find(s => s.id === studentId);
+  if (!s) { box.classList.remove('show'); return; }
+  const parts = [];
+  if (s.gender) parts.push(`性别：${s.gender}`);
+  if (s.subject) parts.push(`专业：${s.subject}`);
+  if (s.direction) parts.push(`方向：${s.direction}`);
+  if (s.level) parts.push(`级别：${s.level}`);
+  if (parts.length) {
+    box.innerHTML = parts.join('　｜　');
+    box.classList.add('show');
+  } else {
+    box.classList.remove('show');
+  }
 }
+window.showStudentInfo = showStudentInfo;
 
 // 主 Tab 切换
 function switchMainTab(tab) {
@@ -120,22 +133,17 @@ function switchMainTab(tab) {
   });
   document.getElementById('tab-hours').classList.toggle('active', tab === 'hours');
   document.getElementById('tab-class').classList.toggle('active', tab === 'class');
-  if (tab === 'class') { renderClassStudentFilter(); renderThumbButtons(); }
+  if (tab === 'class') renderClassStudentFilter();
 }
 window.switchMainTab = switchMainTab;
 
-// 选学生时显示信息
-function showStudentInfo(studentId) {
-  const box = document.getElementById('class-student-info');
-  if (!studentId) { box.classList.remove('show'); return; }
-  const s = studentsState.find(s => s.id === studentId);
-  if (!s) { box.classList.remove('show'); return; }
-  const parts = [s.gender, s.subject, s.direction, s.campus, s.level].filter(Boolean);
-  if (!parts.length) { box.classList.remove('show'); return; }
-  box.innerHTML = parts.map(p => `<span class="info-tag">${escapeHtml(p)}</span>`).join('');
-  box.classList.add('show');
+// 学生表现选择
+function selectPerf(perf, el) {
+  selectedPerformance = perf;
+  document.querySelectorAll('.perf-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
 }
-window.showStudentInfo = showStudentInfo;
+window.selectPerf = selectPerf;
 
 // 课堂记录列表展开
 function toggleClassList() {
@@ -147,6 +155,62 @@ function toggleClassList() {
   if (classListExpanded) renderClassRecords();
 }
 window.toggleClassList = toggleClassList;
+
+// 编辑学生信息弹窗
+function editStudentInfo(id) {
+  const s = studentsState.find(s => s.id === id);
+  if (!s) return;
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:20px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:12px;">
+      <strong style="font-size:16px">编辑：${escapeHtml(s.name)}</strong>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">性别
+        <select id="edit-gender" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+          <option value="">不填</option>
+          <option value="男" ${s.gender==='男'?'selected':''}>男</option>
+          <option value="女" ${s.gender==='女'?'selected':''}>女</option>
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">专业
+        <select id="edit-subject" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+          <option value="">不填</option>
+          <option value="钢琴" ${s.subject==='钢琴'?'selected':''}>钢琴</option>
+          <option value="美声" ${s.subject==='美声'?'selected':''}>美声</option>
+          <option value="童声" ${s.subject==='童声'?'selected':''}>童声</option>
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">教学方向
+        <select id="edit-direction" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+          <option value="">不填</option>
+          <option value="兴趣" ${s.direction==='兴趣'?'selected':''}>兴趣</option>
+          <option value="考级" ${s.direction==='考级'?'selected':''}>考级</option>
+          <option value="兴趣+考级" ${s.direction==='兴趣+考级'?'selected':''}>兴趣+考级</option>
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;">目前级别
+        <input id="edit-level" type="text" value="${escapeHtml(s.level||'')}" placeholder="例如：中国院九级、英皇五级" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+      </label>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button onclick="this.closest('div[style]').remove()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;">取消</button>
+        <button id="edit-save-btn" style="flex:1;padding:10px;border:none;border-radius:8px;background:#1a1a1a;color:#fff;cursor:pointer;font-size:14px;font-weight:500;">保存</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector('#edit-save-btn').addEventListener('click', async () => {
+    const gender = modal.querySelector('#edit-gender').value;
+    const subject = modal.querySelector('#edit-subject').value;
+    const direction = modal.querySelector('#edit-direction').value;
+    const level = modal.querySelector('#edit-level').value.trim();
+    const { error } = await supabaseClient.from('students').update({ gender, subject, direction, level }).eq('id', id);
+    if (error) { alert(error.message); return; }
+    modal.remove();
+    await fetchStudents();
+    renderAll();
+    showToast('学生信息已更新');
+  });
+}
+window.editStudentInfo = editStudentInfo;
 
 async function signInWithGitHub() {
   const redirectTo = window.location.origin + window.location.pathname;
@@ -167,7 +231,7 @@ async function fetchStudents() {
 async function fetchRecords() {
   const { data, error } = await supabaseClient
     .from('lesson_records')
-    .select('id, date, lesson_type, hours, note, student_id, students(name, is_private)')
+    .select('id, date, lesson_type, hours, note, student_id, students(name)')
     .order('date', { ascending: false })
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -176,7 +240,6 @@ async function fetchRecords() {
     date: item.date,
     studentId: item.student_id,
     studentName: item.students?.name || '',
-    isPrivate: item.students?.is_private || false,
     lessonType: item.lesson_type,
     hours: toFixedHours(item.hours),
     note: item.note || '',
@@ -185,7 +248,7 @@ async function fetchRecords() {
 async function fetchClassRecords() {
   const { data, error } = await supabaseClient
     .from('class_records')
-    .select('id, date, student_id, content, homework, performance, note, students(name, gender, subject, direction, campus, level)')
+    .select('id, date, student_id, content, homework, performance, note, students(name, gender, subject, direction, level)')
     .order('date', { ascending: false })
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -194,14 +257,13 @@ async function fetchClassRecords() {
     date: item.date,
     studentId: item.student_id,
     studentName: item.students?.name || '',
-    gender: item.students?.gender || '',
-    subject: item.students?.subject || '',
-    direction: item.students?.direction || '',
-    campus: item.students?.campus || '',
-    level: item.students?.level || '',
+    studentGender: item.students?.gender || '',
+    studentSubject: item.students?.subject || '',
+    studentDirection: item.students?.direction || '',
+    studentLevel: item.students?.level || '',
     content: item.content || '',
     homework: item.homework || '',
-    performance: item.performance || 3,
+    performance: item.performance || '',
     note: item.note || '',
   }));
 }
@@ -228,6 +290,7 @@ async function ensureStudent(name, active = true) {
   await fetchStudents();
   return data;
 }
+
 async function batchImportStudents(rawText) {
   const names = [...new Set(String(rawText || '').split(/\r?\n|,|，|、|;|；/).map(normalizeStudent).filter(Boolean))];
   let added = 0, reactivated = 0;
@@ -249,18 +312,11 @@ async function batchImportStudents(rawText) {
   renderAll();
   return { added, reactivated };
 }
+
 async function toggleStudentStatus(id) {
   const target = studentsState.find(item => item.id === id);
   if (!target) return;
   const { error } = await supabaseClient.from('students').update({ active: !target.active }).eq('id', id);
-  if (error) return alert(error.message);
-  await fetchStudents();
-  renderAll();
-}
-async function togglePrivateStudent(id) {
-  const target = studentsState.find(item => item.id === id);
-  if (!target) return;
-  const { error } = await supabaseClient.from('students').update({ is_private: !target.is_private }).eq('id', id);
   if (error) return alert(error.message);
   await fetchStudents();
   renderAll();
@@ -275,7 +331,6 @@ async function deleteStudent(id) {
   renderAll();
 }
 window.toggleStudentStatus = toggleStudentStatus;
-window.togglePrivateStudent = togglePrivateStudent;
 window.deleteStudent = deleteStudent;
 
 async function removeRecord(id) {
@@ -294,88 +349,25 @@ async function removeClassRecord(id) {
 }
 window.removeClassRecord = removeClassRecord;
 
-// 导出课堂记录
-function exportClassRecord() {
-  const date = document.getElementById('class-date').value;
-  const studentId = document.getElementById('class-student').value;
-  const content = document.getElementById('class-content').value.trim();
-  const homework = document.getElementById('class-homework').value.trim();
-  const note = document.getElementById('class-note').value.trim();
-
-  if (!studentId) { showToast('请先选择学生', 'error'); return; }
-
-  const s = studentsState.find(s => s.id === studentId);
-  if (!s) return;
-
-  const thumbs = '👍'.repeat(selectedPerformance);
-  const text = [
-    `姓名：${s.name}`,
-    s.subject ? `专业：${s.subject}` : '',
-    s.direction ? `教学方向：${s.direction}` : '',
-    s.campus ? `校区：${s.campus}` : '',
-    `上课日期：${date}`,
-    content ? `课堂内容：${content}` : '',
-    homework ? `课后作业：${homework}` : '',
-    `课堂表现：${thumbs}`,
-    note ? `备注：${note}` : '',
-  ].filter(Boolean).join('\n');
-
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `课堂记录-${s.name}-${date}.txt`;
-  link.click();
-  URL.revokeObjectURL(url);
-  showToast('导出成功 ✓');
-}
-window.exportClassRecord = exportClassRecord;
-
-// 保存课堂记录
 async function saveClassRecord() {
   const date = document.getElementById('class-date').value;
   const studentId = document.getElementById('class-student').value;
   const content = document.getElementById('class-content').value.trim();
   const homework = document.getElementById('class-homework').value.trim();
   const note = document.getElementById('class-note').value.trim();
-
-  if (!date || !studentId) { showToast('请填写日期和学生姓名', 'error'); return; }
-
-  const saveBtn = document.getElementById('save-class-btn');
-  saveBtn.disabled = true;
-  saveBtn.textContent = '保存中...';
-
+  if (!date || !studentId) { showToast('请填写日期和学生姓名'); return; }
   const { error } = await supabaseClient.from('class_records').insert({
-    date,
-    student_id: studentId,
-    content,
-    homework,
-    performance: selectedPerformance,
-    note,
+    date, student_id: studentId, content, homework, performance: selectedPerformance, note,
   });
-
-  if (error) {
-    saveBtn.disabled = false;
-    saveBtn.textContent = '保存课堂记录';
-    showToast('保存失败：' + error.message, 'error');
-    return;
-  }
-
-  // 重置表单
+  if (error) { alert(error.message); return; }
   document.getElementById('class-content').value = '';
   document.getElementById('class-homework').value = '';
   document.getElementById('class-note').value = '';
   document.getElementById('class-student').value = '';
   document.getElementById('class-student-info').classList.remove('show');
-  selectedPerformance = 3;
-  renderThumbButtons();
-
-  saveBtn.disabled = false;
-  saveBtn.textContent = '保存课堂记录';
-
   await fetchClassRecords();
   if (classListExpanded) renderClassRecords();
-  showToast('✓ 课堂记录已保存！');
+  showToast('课堂记录已保存 ✓');
 }
 window.saveClassRecord = saveClassRecord;
 
@@ -383,7 +375,7 @@ function renderClassStudentFilter() {
   const sel = document.getElementById('class-student');
   const filterSel = document.getElementById('class-student-filter');
   const active = studentsState.filter(s => s.active);
-  sel.innerHTML = '<option value="">选择学生</option>' + active.map(s => `<option value="${s.id}">${escapeHtml(s.name)}${s.is_private ? ' 🔒' : ''}</option>`).join('');
+  sel.innerHTML = '<option value="">选择学生</option>' + active.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
   filterSel.innerHTML = '<option value="">全部学生</option>' + studentsState.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
 }
 
@@ -391,30 +383,32 @@ function renderClassRecords() {
   const month = document.getElementById('class-month-filter').value;
   const studentId = document.getElementById('class-student-filter').value;
   const list = document.getElementById('class-record-list');
-
   let filtered = classRecordsState.filter(r => {
     const matchMonth = !month || r.date.startsWith(month);
     const matchStudent = !studentId || r.studentId === studentId;
     return matchMonth && matchStudent;
   });
-
   if (!filtered.length) {
     list.innerHTML = '<div style="text-align:center;color:#999;padding:20px;font-size:13px;">暂无课堂记录</div>';
     return;
   }
-
+  const perfClass = p => p === '优' ? 'perf-good' : p === '一般' ? 'perf-bad' : 'perf-ok';
   list.innerHTML = filtered.map(r => {
-    const thumbs = '👍'.repeat(Number(r.performance) || 0);
-    const grays = '👍'.repeat(5 - (Number(r.performance) || 0));
+    const tags = [];
+    if (r.studentGender) tags.push(`<span class="student-tag tag-gender-${r.studentGender}">${escapeHtml(r.studentGender)}</span>`);
+    if (r.studentSubject) tags.push(`<span class="student-tag tag-subject">${escapeHtml(r.studentSubject)}</span>`);
+    if (r.studentDirection) tags.push(`<span class="student-tag tag-direction">${escapeHtml(r.studentDirection)}</span>`);
+    if (r.studentLevel) tags.push(`<span class="student-tag tag-level">${escapeHtml(r.studentLevel)}</span>`);
     return `
     <div class="class-record-item">
       <div class="class-record-header">
         <div>
           <span class="class-record-name">${escapeHtml(r.studentName)}</span>
           <span class="class-record-date" style="margin-left:8px">${r.date}</span>
+          ${tags.length ? `<div class="student-tags" style="margin-top:4px">${tags.join('')}</div>` : ''}
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:13px">${thumbs}<span style="opacity:0.25">${grays}</span></span>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span class="class-record-perf ${perfClass(r.performance)}">${escapeHtml(r.performance)}</span>
           <button class="delete-btn" onclick="removeClassRecord('${r.id}')">删除</button>
         </div>
       </div>
@@ -431,13 +425,9 @@ function renderStudentOptions() {
   const activeStudents = studentsState.filter(item => item.active);
   const currentValues = getSelectedStudentIds();
   const currentFilter = studentFilter.value;
-  studentSelect.innerHTML = activeStudents.map(item =>
-    `<option value="${item.id}">${escapeHtml(item.name)}${item.is_private ? ' 🔒' : ''}</option>`
-  ).join('');
+  studentSelect.innerHTML = activeStudents.map(item => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join('');
   setSelectedStudents(currentValues.filter(id => activeStudents.some(item => item.id === id)));
-  studentFilter.innerHTML = ['<option value="">全部学生</option>', ...studentsState.map(item =>
-    `<option value="${item.id}">${escapeHtml(item.name)}${item.active ? '' : '（已停课）'}${item.is_private ? ' 🔒' : ''}</option>`
-  )].join('');
+  studentFilter.innerHTML = ['<option value="">全部学生</option>', ...studentsState.map(item => `<option value="${item.id}">${escapeHtml(item.name)}${item.active ? '' : '（已停课）'}</option>`)].join('');
   if (currentFilter && studentsState.some(item => item.id === currentFilter)) studentFilter.value = currentFilter;
 }
 
@@ -447,23 +437,19 @@ function renderStudentList() {
     studentList.innerHTML = '<div class="empty-students">还没有学生，先新增一个吧。</div>';
     return;
   }
-  studentList.innerHTML = visible.map(item => {
-    const tags = [item.gender, item.subject, item.direction, item.campus, item.level].filter(Boolean);
-    return `
+  studentList.innerHTML = visible.map(item => `
     <div class="student-chip ${item.active ? '' : 'inactive'}">
       <div>
         <strong>${escapeHtml(item.name)}</strong>
-        ${item.is_private ? '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:10px;margin-left:4px">私教</span>' : ''}
         <span>${item.active ? '在读' : '已停课'}</span>
-        ${tags.length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">${tags.map(t => `<span style="font-size:11px;background:#f0f0f0;color:#555;padding:1px 6px;border-radius:10px">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+        ${renderStudentTags(item)}
       </div>
       <div class="chip-actions">
-        <button type="button" class="small-btn" onclick="togglePrivateStudent('${item.id}')" title="${item.is_private ? '取消私教' : '标记私教'}">${item.is_private ? '取消私教' : '私教'}</button>
+        <button type="button" class="small-btn" onclick="editStudentInfo('${item.id}')">编辑</button>
         <button type="button" class="small-btn" onclick="toggleStudentStatus('${item.id}')">${item.active ? '停课' : '恢复'}</button>
         <button type="button" class="small-btn danger-lite" onclick="deleteStudent('${item.id}')">删除</button>
       </div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 }
 
 function getFilteredRecords(records) {
@@ -480,15 +466,13 @@ function getFilteredRecords(records) {
 
 function renderRecords() {
   const filtered = getFilteredRecords(recordsState);
-  // 私教学生不计入统计
-  const nonPrivateRecords = recordsState.filter(item => !item.isPrivate);
-  const currentMonthRecords = nonPrivateRecords.filter(item => item.date.startsWith(currentMonth()));
-  const tierRecords = nonPrivateRecords.filter(item => item.lessonType === '阶梯课时');
-  const shareRecords = nonPrivateRecords.filter(item => item.lessonType === '陪练课时');
+  const currentMonthRecords = recordsState.filter(item => item.date.startsWith(currentMonth()));
+  const tierRecords = recordsState.filter(item => item.lessonType === '阶梯课时');
+  const shareRecords = recordsState.filter(item => item.lessonType === '陪练课时');
   const currentMonthTierRecords = currentMonthRecords.filter(item => item.lessonType === '阶梯课时');
   const currentMonthShareRecords = currentMonthRecords.filter(item => item.lessonType === '陪练课时');
-  totalCount.textContent = String(nonPrivateRecords.length);
-  totalHours.textContent = sumHours(nonPrivateRecords);
+  totalCount.textContent = String(recordsState.length);
+  totalHours.textContent = sumHours(recordsState);
   monthHours.textContent = sumHours(currentMonthRecords);
   tierHours.textContent = sumHours(tierRecords);
   shareHours.textContent = sumHours(shareRecords);
@@ -499,9 +483,9 @@ function renderRecords() {
     return;
   }
   tableBody.innerHTML = filtered.map(item => `
-    <tr${item.isPrivate ? ' style="opacity:0.6"' : ''}>
+    <tr>
       <td>${item.date}</td>
-      <td>${escapeHtml(item.studentName || '-')}${item.isPrivate ? ' 🔒' : ''}</td>
+      <td>${escapeHtml(item.studentName || '-')}</td>
       <td>${escapeHtml(item.lessonType)}</td>
       <td>${item.hours}</td>
       <td>${escapeHtml(item.note || '-')}</td>
@@ -569,29 +553,18 @@ form.addEventListener('submit', async (e) => {
     hours: Number(hoursInput.value),
     note: noteInput.value.trim(),
   }));
-
-  const submitBtn = form.querySelector('button[type=submit]');
-  submitBtn.disabled = true;
-  submitBtn.textContent = '保存中...';
-
   const { error } = await supabaseClient.from('lesson_records').insert(rows);
-
-  submitBtn.disabled = false;
-  submitBtn.textContent = '保存记录';
-
-  if (error) { showToast('保存失败：' + error.message, 'error'); return; }
-
+  if (error) return alert(error.message);
+  const selectedIdsToKeep = selectedStudents.map(student => student.id);
   form.reset();
   dateInput.value = today();
   lessonTypeInput.value = '阶梯课时';
   setHoursChoice('1');
-  // 重置学生选择为0项
-  Array.from(studentSelect.options).forEach(opt => opt.selected = false);
-
   await fetchRecords();
   renderRecords();
   renderStudentOptions();
-  showToast(`✓ 已保存 ${selectedStudents.length} 条记录！`);
+  setSelectedStudents(selectedIdsToKeep);
+  showToast(`已保存 ${selectedStudents.length} 条记录`);
 });
 
 hoursChoiceGroup.addEventListener('click', (e) => {
@@ -603,32 +576,27 @@ addStudentQuickBtn.addEventListener('click', async () => { await addStudentFromI
 
 addStudentBtn.addEventListener('click', async () => {
   const name = normalizeStudent(manageStudentNameInput.value);
-  if (!name) return alert('请输入学生姓名');
+  if (!name) return alert('请填写学生姓名');
   const gender = document.getElementById('manageGender').value;
   const subject = document.getElementById('manageSubject').value;
   const direction = document.getElementById('manageDirection').value;
-  const campus = document.getElementById('manageCampus').value;
   const level = document.getElementById('manageLevel').value.trim();
-
   const existing = studentsState.find(item => item.name === name);
   if (existing) {
-    const { error } = await supabaseClient.from('students').update({ active: true, gender, subject, direction, campus, level }).eq('id', existing.id);
+    const { error } = await supabaseClient.from('students').update({ active: true, gender, subject, direction, level }).eq('id', existing.id);
     if (error) return alert(error.message);
   } else {
-    const { error } = await supabaseClient.from('students').insert({ name, active: true, gender, subject, direction, campus, level });
+    const { error } = await supabaseClient.from('students').insert({ name, active: true, gender, subject, direction, level });
     if (error) return alert(error.message);
   }
-
   manageStudentNameInput.value = '';
   document.getElementById('manageGender').value = '';
   document.getElementById('manageSubject').value = '';
   document.getElementById('manageDirection').value = '';
-  document.getElementById('manageCampus').value = '';
   document.getElementById('manageLevel').value = '';
-
   await fetchStudents();
   renderAll();
-  showToast('✓ 学生已添加！');
+  showToast(`${name} 已新增`);
 });
 
 batchImportBtn.addEventListener('click', async () => {
@@ -651,7 +619,6 @@ typeFilter.addEventListener('input', renderRecords);
 studentFilter.addEventListener('input', renderRecords);
 loginBtn.addEventListener('click', signInWithGitHub);
 logoutBtn.addEventListener('click', signOut);
-
 document.getElementById('class-month-filter').addEventListener('input', () => { if (classListExpanded) renderClassRecords(); });
 document.getElementById('class-student-filter').addEventListener('input', () => { if (classListExpanded) renderClassRecords(); });
 
@@ -678,31 +645,18 @@ async function init() {
   document.getElementById('class-month-filter').value = currentMonth();
   monthFilter.value = currentMonth();
   setHoursChoice('1');
-  renderThumbButtons();
-
   const { data, error } = await supabaseClient.auth.getSession();
   if (error) { console.error(error); return alert(`登录状态读取失败：${error.message}`); }
   setAuthUI(data.session);
   if (data.session) {
-    try {
-      await refreshData();
-      showToast('登录成功，云端同步已连接');
-    } catch (err) {
-      console.error(err);
-      alert(`云端连接失败：${err.message}`);
-    }
+    try { await refreshData(); showToast('登录成功，云端同步已连接'); }
+    catch (err) { console.error(err); alert(`云端连接失败：${err.message}`); }
   }
-
   supabaseClient.auth.onAuthStateChange(async (_event, session) => {
     setAuthUI(session);
     if (session) {
-      try {
-        await refreshData();
-        showToast('已登录');
-      } catch (err) {
-        console.error(err);
-        alert(`云端连接失败：${err.message}`);
-      }
+      try { await refreshData(); showToast('已登录'); }
+      catch (err) { console.error(err); alert(`云端连接失败：${err.message}`); }
     }
   });
 }
